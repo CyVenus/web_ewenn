@@ -3,3 +3,4 @@ dist/
 screenshots/
 *.local
 .DS_Store
+docs/builder-prompt.md
