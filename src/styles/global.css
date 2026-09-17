@@ -1,0 +1,551 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  background: var(--sky);
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-brand);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--sky);
+  -webkit-font-smoothing: antialiased;
+  /* Matches the 500ms blend the Rive file uses between phases, so the HTML layer and the
+     canvas change colour together rather than one chasing the other. */
+  transition: background-color 500ms ease;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 2px;
+  box-shadow: var(--focus-halo);
+}
+
+/* ---------------------------------------------------------------- page shells */
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+/* Without the canvas, the flat sky needs a horizon or the page reads as an error. */
+.page--scene-failed,
+.page--doc {
+  background:
+    radial-gradient(120% 60% at 50% 100%, var(--snow) 0 38%, transparent 38.5%),
+    var(--sky);
+}
+
+/* ---------------------------------------------------------------- Rive layer */
+
+.scene {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 100vh;
+  height: 100lvh;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 600ms ease-out;
+}
+
+.scene.is-ready {
+  opacity: 1;
+}
+
+.scene__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------- HTML layer */
+
+/*
+ * pointer-events: none is what lets the penguin, the lamp and the trees stay tappable — the
+ * runtime owns pointer input on the canvas underneath. Only this layer's own links opt back in.
+ * The trap it creates is that anything here stays *invisible and still clickable-through*, so
+ * a stray full-width box silently steals nothing but also blocks nothing — see the landscape
+ * block at the bottom for the one place that bites.
+ */
+.overlay {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  pointer-events: none;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.overlay a,
+.overlay button {
+  pointer-events: auto;
+}
+
+/* ---------------------------------------------------------------- header */
+
+.site-header {
+  display: flex;
+  align-items: center;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  border-radius: 14px;
+}
+
+.brand__icon {
+  width: 44px;
+  height: 44px;
+  /* The artwork is a full-bleed square; the radius is what makes it read as an iOS app icon. */
+  border-radius: 22%;
+  box-shadow: 0 4px 14px rgb(16 42 67 / 18%);
+}
+
+.brand__name {
+  font-size: var(--type-brand);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- hero */
+
+.overlay__main {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  /* Keeps the block above ~54% of the height, which is where the penguin's head starts. */
+  padding-top: clamp(20px, 7.5vh, 104px);
+}
+
+/* Wide enough for the headline to set on one line: it needs ~723px of run at the 56px cap,
+   and 560px — the old value — is precisely what was forcing the two-line wrap. */
+.hero {
+  width: min(820px, 100%);
+}
+
+/*
+ * No panel behind the hero copy. Any rectangle here reads as a pane of glass laid over the
+ * illustration — on wide screens it covers the sun, the pines and the streetlamp — and a
+ * soft-edged bloom is still a rectangle, just a blurred one, greying out whatever it overlaps.
+ * So the light that lifts the type off the sky is bonded to the letterforms instead, which
+ * leaves the whole scene visible behind it.
+ *
+ * Centred, stacked directly above the centred penguin: the scene is symmetrical and a
+ * left-ragged block fights it.
+ */
+.hero__card {
+  text-align: center;
+}
+
+.hero__title {
+  margin: 0;
+  font-size: var(--type-display);
+  font-weight: var(--weight-semibold);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  /* Snow-light behind the glyphs: the job a card used to do, done by the type itself. Three
+     stops rather than one so it reads as diffused light and never as an outline. */
+  text-shadow:
+    0 0 24px rgb(255 255 255 / 92%),
+    0 0 52px rgb(255 255 255 / 72%),
+    0 2px 0 rgb(255 255 255 / 55%);
+}
+
+.hero__title-phrase {
+  /*
+   * Keeps the headline breaking as "Your new" / "self-care partner." instead of at the hyphen.
+   * text-wrap: balance is the cause here, not the cure: it minimises the longest line, and
+   * "Your new self-" / "care partner." is the more balanced of the two. inline-block rather
+   * than white-space: nowrap, so a narrow viewport or a large user font scale still wraps
+   * inside the phrase instead of overflowing it.
+   */
+  display: inline-block;
+}
+
+.hero__subline {
+  margin: 14px auto 0;
+  /* Held to roughly 89% of the headline's width so it reads as a second line of the same
+     block rather than a paragraph that happens to sit under it. */
+  max-width: 48ch;
+  font-size: var(--type-body);
+  line-height: 1.45;
+  /* Primary ink, not the secondary tone the document pages use. On a card a lighter body
+     colour aids long-form reading against a known backdrop; out on the scene the backdrop is
+     a moving night sky and legibility outranks tonal hierarchy, which scale already carries. */
+  color: var(--ink);
+  text-wrap: pretty;
+  /*
+   * Tighter and brighter than the headline: small text needs the backdrop closer in, and the
+   * subline is the one pair with no headroom to spare. The first stop is opaque and tight so
+   * the glyph always sits on white even when a cloud or a snowflake drifts behind it — night
+   * is the worst case, and the backdrop there moves.
+   */
+  text-shadow:
+    0 0 6px rgb(255 255 255),
+    0 0 16px rgb(255 255 255 / 98%),
+    0 0 34px rgb(255 255 255 / 82%);
+}
+
+/*
+ * Apple's official badge. The padding IS the required clear space (at least ¼ of the badge
+ * height), which is why it sits on the link rather than as a margin on the image — clear space
+ * has to belong to the thing being clicked. No background, border or shadow: the artwork may
+ * not be altered or framed, and it already carries its own black lockup.
+ */
+.store-badge {
+  display: inline-block;
+  margin: 12px 0 -14px;
+  padding: 14px;
+  border-radius: 18px;
+  line-height: 0;
+}
+
+.store-badge__img {
+  height: 56px;
+  width: auto;
+}
+
+/*
+ * Pre-launch, the badge is an image rather than a link (see AppStoreBadge.tsx). It is styled
+ * identically on purpose — Apple's artwork must not be greyed out, dimmed or otherwise
+ * modified to signal "not yet", so the only difference is that there is nothing to click.
+ */
+.store-badge--pending {
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------- footer */
+
+.site-footer {
+  justify-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 18px;
+  margin-top: 12px;
+  padding: 6px 8px 6px 18px;
+  font-size: var(--type-caption);
+  color: var(--ink-soft);
+  background: var(--footer-glass);
+  border: 1px solid var(--footer-border);
+  border-radius: 24px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  /* The pill itself, not just its links: a glass surface that clicks through to a tree behind
+     it would be a puzzle rather than a feature. */
+  pointer-events: auto;
+}
+
+.site-footer__copy {
+  margin: 0;
+}
+
+.site-footer__nav {
+  display: flex;
+  gap: 18px;
+}
+
+.site-footer__nav a {
+  display: inline-block;
+  /* 12px vertical padding, not height: the pill stays 40px tall while the tap target clears 44. */
+  padding: 12px 2px;
+  text-decoration: none;
+}
+
+.site-footer__nav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------- documents */
+
+.page--doc .overlay {
+  pointer-events: auto;
+}
+
+.doc {
+  align-content: start;
+  padding: clamp(12px, 4vh, 48px) 0 clamp(24px, 5vh, 56px);
+}
+
+.doc__article {
+  width: min(640px, 100%);
+  padding: clamp(24px, 4vw, 40px);
+  border-radius: 28px;
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-rim), var(--card-shade), var(--card-shadow-contact), var(--doc-shadow-ambient);
+  color: var(--ink);
+  text-align: left;
+}
+
+.doc__article h1 {
+  margin: 0 0 6px;
+  font-size: var(--type-title);
+  font-weight: var(--weight-semibold);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.doc__article h2 {
+  margin: clamp(28px, 4vw, 40px) 0 12px;
+  font-size: var(--type-section);
+  font-weight: var(--weight-medium);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.doc__article h3 {
+  margin: clamp(20px, 2.6vw, 28px) 0 8px;
+  font-size: var(--type-subsection);
+  font-weight: var(--weight-medium);
+  line-height: 1.35;
+}
+
+.doc__article p,
+.doc__article li {
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.doc__article p {
+  margin: 0 0 14px;
+}
+
+.doc__article ul {
+  margin: 0 0 16px;
+  padding-left: 1.35em;
+}
+
+.doc__article li {
+  margin-bottom: 8px;
+}
+
+.doc__article li::marker {
+  color: var(--action);
+}
+
+.doc__article strong {
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+
+.doc__article a {
+  color: var(--action);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  /* Email addresses are the longest unbroken strings on these pages; without this they push
+     the card wider than a phone. */
+  overflow-wrap: anywhere;
+}
+
+/* Specificity, not decoration: `.doc__article a` would otherwise recolour the back link. */
+.doc__article .doc__back {
+  display: inline-block;
+  margin-bottom: clamp(14px, 2.4vw, 22px);
+  padding: 6px 0;
+  font-size: var(--type-button);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.doc__article .doc__back:hover {
+  text-decoration: underline;
+}
+
+/* Same reason: `.doc__article p` outranks a lone `.doc__updated`. */
+.doc__article .doc__updated {
+  margin: 0 0 clamp(20px, 3vw, 32px);
+  font-size: var(--type-caption);
+}
+
+/* The one passage on each page worth stopping at. */
+.doc__note {
+  margin: clamp(18px, 2.5vw, 26px) 0;
+  padding: clamp(16px, 2.4vw, 22px);
+  border-radius: 18px;
+  color: var(--badge-label);
+  background: var(--badge-surface);
+}
+
+/* DESIGN.md: badgeLabel is the only label for a badgeSurface fill. Links keep --action, which
+   is 4.81:1 on this fill. */
+.doc__note p,
+.doc__note li,
+.doc__note strong {
+  color: inherit;
+}
+
+.doc__note p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------------------------------- entrance */
+
+/*
+ * One arrival, then stillness: the header, the three hero elements and the footer fade up in
+ * sequence and nothing moves again. The stagger is animation-delay and never delayed mounting —
+ * every element is in the DOM at first paint, because Chrome timestamps LCP at paint time.
+ */
+.enter,
+.hero__card > * {
+  animation: enter 400ms ease-out both;
+}
+
+.hero__card > :nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.hero__card > :nth-child(2) {
+  animation-delay: 190ms;
+}
+
+.hero__card > :nth-child(3) {
+  animation-delay: 260ms;
+}
+
+/* Starts at 0.01, not 0: Chrome ignores text painted at opacity 0 for FCP/LCP, which left the
+   page with no LCP element at all. */
+@keyframes enter {
+  from {
+    opacity: 0.01;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- responsive */
+
+@media (min-width: 768px) {
+  .brand__icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 767px) {
+  .store-badge {
+    margin: 12px 0 -12px;
+    padding: 12px;
+  }
+
+  .store-badge__img {
+    height: 48px;
+  }
+}
+
+/*
+ * Phones on their side and ultrawide screens. The scene is bottom-anchored on these shapes,
+ * which raises the penguin to 45–51% of the height and crowds the sun, the pine cluster and the
+ * streetlamp into the left fifth. A centred hero lands on the penguin's head, and a hero at the
+ * far left lands on the lamp — and because .overlay is pointer-events: none, an overlapping
+ * block leaves the lamp and trees *clickable while invisible*, which is the worst of both.
+ * 21vw is the corridor between the scenery and the penguin.
+ *
+ * The 600px trigger is measured, not inherited. It used to be 840px, which was correct when the
+ * hero was a card; the hero is now three text elements and a badge, about 335px tall at a
+ * 1280×694 viewport — 48% of the height, where the penguin's head does not start until 58%.
+ * Centred still clears at 694px and at 768px, and stops clearing at around 560px, so 600px is
+ * the threshold with a margin. Raising it again would push ordinary laptop windows into the
+ * corridor for no reason; lowering it past 560 would drop the badge onto the penguin.
+ */
+@media (orientation: landscape) and (max-height: 600px), (min-aspect-ratio: 2/1) {
+  .overlay__main {
+    justify-items: start;
+    align-content: center;
+    padding-top: 0;
+    padding-left: 21vw;
+  }
+
+  .hero {
+    /* 21% + 24vw stays clear of the penguin at every width in this range. */
+    width: min(560px, 24vw);
+  }
+
+  .hero__card {
+    text-align: left;
+  }
+
+  .hero__subline {
+    margin-left: 0;
+  }
+
+  .hero__title {
+    /* Ceiling set by the corridor, not by taste: the phrase is 7.709em, so the content box has
+       to be at least that wide or the headline breaks at the hyphen again. */
+    font-size: clamp(1.25rem, 0.6rem + 1.6vw, 2.5rem);
+  }
+}
+
+/* Short landscape phones: a compact block keeps the footer on screen. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .hero__title {
+    font-size: 1.5rem;
+  }
+
+  .hero__subline {
+    font-size: 1rem;
+  }
+
+  .store-badge {
+    margin: 4px 0 0;
+    padding: 12px;
+  }
+
+  .store-badge__img {
+    height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * `animation: none` leaves these elements with no opacity declaration at all, so they fall
+   * back to 1. The 0.01 lives ONLY inside the keyframe for that reason — moving it onto .enter
+   * would hand every reduced-motion visitor a blank page.
+   */
+  .enter,
+  .hero__card > * {
+    animation: none;
+  }
+
+  .scene,
+  body {
+    transition: none;
+  }
+}

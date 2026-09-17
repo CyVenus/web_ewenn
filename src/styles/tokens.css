@@ -1,0 +1,105 @@
+/*
+ * Design tokens.
+ *
+ * Source of truth is DESIGN.md, the iOS app's design system. Two departures from it exist and
+ * both are forced by this site's one structural difference from the app: text here sits on a
+ * moving illustration rather than on a known surface.
+ *
+ *   1. --text-secondary. DESIGN.md's `secondaryText` #64748B is correct for body text on a card
+ *      and fails AA over the scene (3.73:1 on the day sky, 2.93:1 on night). It only clears
+ *      4.5:1 once the surface behind it reaches ~90% white, which would destroy the frost.
+ *   2. The type scale. DESIGN.md's sizes are anchored to a 390pt phone, so Display 32-36pt
+ *      cannot transfer literally to a 2560px viewport. Each app value becomes a clamp floor.
+ *
+ * The app ships light-only (DESIGN.md, "The app ships light-only"), so every surface here is
+ * light in all four phases. Only the sky changes value; the card changes temperature.
+ */
+:root {
+  --font-brand: Fredoka, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+
+  /* Type scale. The app style is in brackets; the app value is the clamp floor. */
+  /* Tuned so "Your new self-care partner." sets on ONE line from tablet width up: ~47px at a
+     1280px viewport, which is the reference design's size, still capping at 56px on large
+     screens. The 32px floor is deliberate — on a phone the headline SHOULD wrap, to
+     "Your new / self-care partner.", and .hero__title-phrase is what keeps that break off
+     the hyphen. */
+  --type-display: clamp(2rem, 0.86rem + 2.6vw, 3.5rem);       /* [Display 32-36]        hero h1 */
+  --type-title: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);       /* [Screen title 26-30]   doc h1 */
+  --type-brand: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem);       /* [Screen title 26-30]   wordmark */
+  --type-section: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);     /* [Section heading 20-22] doc h2 */
+  --type-subsection: 1.0625rem;                               /* [Section heading 20-22] doc h3 */
+  --type-body: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);          /* [Body 16-17]           subline, prose */
+  --type-button: 0.9375rem;                                   /* [Button 16-17]         back link */
+  --type-caption: 0.875rem;                                   /* [Caption 13-14]        footer, updated */
+
+  /* DESIGN.md: "Prefer Regular, Medium, and SemiBold; avoid excessive use of Bold." */
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --sky: #81CBEE;
+  --snow: #F2F8FD;
+  --ink: #1E293B;          /* primaryText */
+  --ink-soft: #334155;
+
+  /* actionPrimary. DESIGN.md scopes it to "Primary buttons, CTAs, links, active", which on this
+     site is every interactive thing, the focus ring included. */
+  --action: #137594;
+
+  /* AA-safe substitution for DESIGN.md `secondaryText` over translucent surfaces. See header. */
+  --text-secondary: #334155;
+
+  /* The document card is a lit surface in every phase; only its temperature changes. The home
+     page has no panel at all — see .hero__title in global.css. Near-opaque on purpose: at 55%
+     the fill stopped being a colour and became a smeared photograph of whatever sat behind it. */
+  --card-surface: rgb(255 255 255 / 90%);
+
+  /* Light-on-light needs a LIGHTER line, not a darker one: a crisp white rim reads as snow
+     catching the light on the top edge. DESIGN.md's hairline #DDE6F4 is 1.17:1 against the noon
+     sky — it divides two app surfaces, it is not an edge against an illustration. */
+  --card-border: rgb(255 255 255 / 92%);
+
+  /*
+   * Card material, composed rim → shade → contact → ambient. Two shadow layers rather than one:
+   * the tight contact layer is what makes the card sit ON the snow instead of hovering over a
+   * generic blur. The ambient layer carries a negative spread so it stays tucked underneath.
+   */
+  --card-rim: inset 0 1px 0 rgb(255 255 255 / 90%);
+  --card-shade: inset 0 -1px 0 rgb(16 42 67 / 8%);
+  --card-shadow-contact: 0 1px 2px rgb(16 42 67 / 10%);
+  --doc-shadow-ambient: 0 14px 44px -16px rgb(16 42 67 / 22%);
+
+  /* The ring alone fails WCAG 1.4.11 over open sky: #137594 is 2.13:1 on the rendered night sky,
+     2.78:1 on evening, 2.97:1 on day. The white halo sits behind and around it so the ring always
+     borders white (5.25:1) rather than whatever the sky happens to be. */
+  --focus-halo: 0 0 0 8px rgb(255 255 255 / 92%);
+
+  --footer-glass: rgb(255 255 255 / 62%);
+  --footer-border: rgb(255 255 255 / 70%);
+
+  /* badgeSurface / badgeLabel. Opaque on purpose: DESIGN.md pairs them for 12.3:1, and that
+     guarantee holds only at full opacity ("Prefer an opaque token to an alpha wash"). */
+  --badge-surface: #FDF3DC;
+  --badge-label: #3A2A00;
+}
+
+html[data-phase='day'] {
+  --sky: #81CBEE;
+}
+
+html[data-phase='noon'] {
+  --sky: #9BDEFE;
+  --card-surface: rgb(255 255 255 / 91%);
+}
+
+html[data-phase='evening'] {
+  --sky: #F2AD71;
+  /* Warm cream, picking up the sky and the lit streetlamp. Composites to ~#FCEBD9. */
+  --card-surface: rgb(255 250 242 / 92%);
+}
+
+html[data-phase='night'] {
+  --sky: #867BFB;
+  /* Moonlit white with a faint lavender cast. A dark slab here would be a web-only invention:
+     DESIGN.md pins the app to the light appearance in every phase. */
+  --card-surface: rgb(250 249 255 / 93%);
+}
