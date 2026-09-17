@@ -271,9 +271,17 @@ a {
   margin: 0;
 }
 
+/*
+ * Wraps. The outer pill already did, but this row did not, so on a very narrow viewport — a
+ * zoomed-in phone, mostly — the three links stayed on one line and pushed the document wider
+ * than the screen. Horizontal scrolling is the one reflow failure WCAG 1.4.10 does not forgive,
+ * and it is invisible in testing unless you go narrow enough to trip it.
+ */
 .site-footer__nav {
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 18px;
 }
 
 .site-footer__nav a {
@@ -471,6 +479,74 @@ a {
 }
 
 /*
+ * Very narrow viewports — a small phone, or a normal one zoomed in. --type-display floors at
+ * 2rem, which is right for a 390px phone and too big here: at 260px it set the headline in three
+ * lines by breaking the hyphenated phrase apart, which is the wrap the markup exists to prevent.
+ */
+@media (max-width: 340px) {
+  .hero__title {
+    font-size: clamp(1.5rem, 1rem + 2vw, 2rem);
+  }
+
+  .site-footer {
+    padding-left: 12px;
+    gap: 2px 12px;
+  }
+}
+
+/*
+ * Short viewports — and that means ZOOM as much as it means a phone on its side.
+ *
+ * Browser zoom does not have a mode of its own: at 300% a 1500×900 window gives the page a
+ * 500×300 CSS viewport, so the height shrinks by the same factor as the width. Width-only
+ * responsive rules therefore miss zoom entirely, and the hero is a fixed stack of four things —
+ * heading, subline, badge, and the padding above them — that simply does not fit in 300px.
+ * Everything here shrinks that stack rather than letting it push the badge and footer out of
+ * view, which is what a zoomed-in visitor was getting.
+ *
+ * This sits BEFORE the corridor block on purpose: where both apply, the corridor's own sizing
+ * is the more specific answer and should win.
+ *
+ * The aspect clause is what keeps small PHONES out of it. A 320×568 phone is short in absolute
+ * terms but tall for its width, and it has room for the full-size hero; compacting it there made
+ * a real device worse to fix a zoom case. So: short and wider-than-tall (zoom, and phones on
+ * their side), or short in absolute terms whatever the shape.
+ */
+@media (max-height: 620px) and (min-aspect-ratio: 1/1), (max-height: 460px) {
+  .overlay__main {
+    padding-top: clamp(6px, 2vh, 18px);
+  }
+
+  .brand__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hero__title {
+    font-size: clamp(1.375rem, 0.9rem + 2.2vw, 2rem);
+  }
+
+  .hero__subline {
+    margin-top: 8px;
+    font-size: 0.9375rem;
+  }
+
+  .store-badge {
+    margin: 10px 0 0;
+    padding: 10px;
+  }
+
+  .store-badge__img {
+    /* Apple's floor is 40px. This is the one dimension here that is not ours to tune. */
+    height: 40px;
+  }
+
+  .site-footer {
+    margin-top: 8px;
+  }
+}
+
+/*
  * Phones on their side and ultrawide screens. The scene is bottom-anchored on these shapes,
  * which raises the penguin to 45–51% of the height and crowds the sun, the pine cluster and the
  * streetlamp into the left fifth. A centred hero lands on the penguin's head, and a hero at the
@@ -478,14 +554,21 @@ a {
  * block leaves the lamp and trees *clickable while invisible*, which is the worst of both.
  * 21vw is the corridor between the scenery and the penguin.
  *
- * The 600px trigger is measured, not inherited. It used to be 840px, which was correct when the
- * hero was a card; the hero is now three text elements and a badge, about 335px tall at a
- * 1280×694 viewport — 48% of the height, where the penguin's head does not start until 58%.
- * Centred still clears at 694px and at 768px, and stops clearing at around 560px, so 600px is
- * the threshold with a margin. Raising it again would push ordinary laptop windows into the
- * corridor for no reason; lowering it past 560 would drop the badge onto the penguin.
+ * Both triggers are narrower than they were, and both for the same reason: the corridor is a
+ * COST, not a free win. It spends 21vw on padding and leaves the copy about 24vw to live in, so
+ * it should only run where the penguin actually needs dodging.
+ *
+ * `max-height` is 500px, matching the contract's own figure for when the bottom-anchored scene
+ * raises the penguin to 45–51%. It was 600px, which caught a 1440×900 laptop at 150% zoom —
+ * a 960×600 viewport where the penguin is still down at 58% — and squeezed the headline into a
+ * 230px column for nothing. Centred fits there with room to spare.
+ *
+ * `min-width` is the half that was missing entirely. Zoomed in, the viewport is short AND narrow,
+ * so 24vw collapsed to about 115px and set a four-word headline in five lines against the left
+ * edge. Below this width there is no corridor to aim for, so the copy stays centred.
  */
-@media (orientation: landscape) and (max-height: 600px), (min-aspect-ratio: 2/1) {
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 760px),
+  (min-aspect-ratio: 2/1) and (min-width: 760px) {
   .overlay__main {
     justify-items: start;
     align-content: center;
@@ -514,22 +597,12 @@ a {
 }
 
 /* Short landscape phones: a compact block keeps the footer on screen. */
-@media (orientation: landscape) and (max-height: 500px) {
+/* The corridor is narrow, so its headline needs to come down further still on the shortest
+   landscape phones. Everything else on these shapes is already handled by the max-height block
+   above, which is why this is now three lines rather than a second compact ruleset. */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 760px) {
   .hero__title {
-    font-size: 1.5rem;
-  }
-
-  .hero__subline {
-    font-size: 1rem;
-  }
-
-  .store-badge {
-    margin: 4px 0 0;
-    padding: 12px;
-  }
-
-  .store-badge__img {
-    height: 48px;
+    font-size: 1.375rem;
   }
 }
 

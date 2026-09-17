@@ -27,11 +27,23 @@ npm run dev          # http://localhost:5173
 | `npm run screenshots` | 8 viewports × 4 phases against a running preview, with layout assertions |
 | `npm run screenshots:fallback` | Asserts the page still works with WebGL disabled |
 | `npm run contrast` | Measures real hero contrast per phase against WCAG AA |
+| `npm run layout` | 22 viewport shapes × 2 pages: overflow, overlap and zoom reflow |
 | `npm run sync:assets` | Copies `assets/` originals to `public/` and `src/assets/` |
 | `npm run check:assets` | Verifies those copies have not drifted |
 
-The three QA commands need a preview running: `npm run build && npm run preview -- --port 4180`.
+The four QA commands need a preview running: `npm run build && npm run preview -- --port 4180`.
 Override the target with `BASE_URL`.
+
+### Zoom is a viewport size, not a mode
+
+Zooming to 300% on a 1440x900 window gives the page a 480x300 CSS viewport — the height shrinks
+by the same factor as the width. Width-only breakpoints therefore miss zoom completely, which is
+how the hero once ended up with its badge and footer pushed off the bottom and a four-word
+headline set in five lines. `npm run layout` covers the shapes 125–500% zoom produces, and the
+rules that matter are keyed on `max-height` and aspect ratio rather than width alone.
+
+Horizontal scrolling is the one thing never acceptable (WCAG 1.4.10). Scrolling *down* at high
+zoom is expected, and the audit budgets it rather than banning it.
 
 ## Before launch — one edit
 
