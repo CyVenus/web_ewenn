@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6XY7MCBC52.app.ewenn.ewenn"],
+        "components": [
+          { "/": "/challenge/*", "comment": "A challenge invite (FEATURES.md §4.2)." },
+          { "/": "/invite/*", "comment": "A friend invite (FEATURES.md §7)." }
+        ]
+      }
+    ]
+  }
+}
