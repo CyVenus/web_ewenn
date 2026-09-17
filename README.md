@@ -1,0 +1,139 @@
+# Ewenn — website
+
+Single-screen marketing site for **Ewenn**, an iOS self-care app with a penguin companion.
+
+React 19 + Vite + TypeScript, with a full-screen interactive Rive scene that follows the
+visitor's local time of day. No scrolling on a normal viewport: a header, one block of copy with
+Apple's App Store badge, and a footer, over a winter scene you can poke at.
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+```
+
+> **Use `localhost`, not `127.0.0.1`.** Vite binds to IPv6 here, so `127.0.0.1` refuses the
+> connection while `localhost` works.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` | Typecheck, then build to `dist/` |
+| `npm run preview` | Serve the built `dist/` |
+| `npm test` | Unit and component tests (vitest + jsdom) |
+| `npm run typecheck` | `tsc -b` |
+| `npm run lint` | ESLint |
+| `npm run screenshots` | 8 viewports × 4 phases against a running preview, with layout assertions |
+| `npm run screenshots:fallback` | Asserts the page still works with WebGL disabled |
+| `npm run contrast` | Measures real hero contrast per phase against WCAG AA |
+| `npm run sync:assets` | Copies `assets/` originals to `public/` and `src/assets/` |
+| `npm run check:assets` | Verifies those copies have not drifted |
+
+The three QA commands need a preview running: `npm run build && npm run preview -- --port 4180`.
+Override the target with `BASE_URL`.
+
+## Before launch — one edit
+
+`APP_STORE_ID` in `src/config.ts` is empty. That single constant gates everything:
+
+- **Empty** — Apple's badge renders as an image with no link, and no Smart App Banner tag is
+  emitted. There is nowhere legitimate to send anyone until the app is listed, and a dead
+  download link is worse than a patient one.
+- **A numeric ID** — the badge becomes a real link to `apps.apple.com/app/id<ID>`, and
+  `src/lib/headTags.ts` emits the matching `apple-itunes-app` banner from the same constant, so
+  the two can never disagree.
+
+Set it and rebuild. Nothing else changes.
+
+> Apple's Marketing Resources terms expect the badge to link to the app's product page. Showing
+> it unlinked pre-launch is a deliberate interim state, not the finished article.
+
+## How the day/night cycle works
+
+The scene has four phases, chosen from the visitor's **local browser clock** — so time zone and
+daylight saving are handled by the platform, and there is no timezone library anywhere.
+
+| Phase | Hours | Rive `time` | Sky |
+|---|---|---|---|
+| `day` | 06:00–10:59 | 1 | `#81CBEE` |
+| `noon` | 11:00–15:59 | 2 | `#9BDEFE` |
+| `evening` | 16:00–19:59 | 3 | `#F2AD71` |
+| `night` | 20:00–05:59 | 0 | `#867BFB` |
+
+The boundaries live in `src/phase-schedule.json`, read by both the app and the build so they
+cannot drift. `src/lib/prepaint.ts` emits a tiny classic script that sets `<html data-phase>`
+**before first paint**, so there is no flash of the wrong sky; a test proves it agrees with
+`getPhase` at every half hour. The phase is re-evaluated every 60 s and whenever a backgrounded
+tab becomes visible. The lamp in the scene is lit for evening and night only.
+
+**`?phase=night|day|noon|evening`** (or `0`–`3`) pins the phase and stops the tick. The
+screenshot matrix relies on it.
+
+## Architecture
+
+```
+src/
+  config.ts          copy, Rive names, App Store + site constants
+  phase-schedule.json  the four boundaries, shared with the build
+  lib/               pure logic: phase, prepaint, artboard, routes, headTags, frames, webgl
+  hooks/             usePhase, useReducedMotion, useViewportArtboard
+  components/        RiveScene/RiveStage + the static UI
+  content/           the legal documents, as JSX
+  pages/             one createRoot entry per HTML document
+  styles/            tokens.css (design tokens) + global.css (layout)
+```
+
+There is **no router**. Each page is its own HTML document with its own entry — a single screen
+plus three text pages does not need one.
+
+`assets/` holds the protected originals (the `.riv` and two SVGs); `public/` and `src/assets/`
+hold copies the app loads by URL or bundles. `npm run check:assets` is what notices if they drift.
+
+## Things that will bite you
+
+- **The Rive names are a contract.** `docs/rive-contract.md` is the source of truth. A typo does
+  not throw; the scene keeps animating and quietly ignores the clock.
+- **Only three properties may be written**: `time`, `lampOn`, `lampOff`. Everything else in the
+  file belongs to interactions that run inside it.
+- **`.overlay` is `pointer-events: none`** so clicks reach the canvas. Anything added to the HTML
+  layer that covers the lamp or a tree makes them *clickable while invisible*.
+- **The Rive canvas must never be the LCP element.** The headline paints first and is the LCP;
+  the canvas fades in when it reports ready.
+- **`prefers-reduced-motion` alone governs playback.** There is deliberately no pause button.
+
+## Fallbacks
+
+The page is complete and correct without the scene. No WebGL2 → a flat phase-coloured sky with a
+snow horizon, one console warning, no throw. A failed `.riv` load on mobile retries the desktop
+artboard once, then falls back. A view model that does not bind warns once and leaves the scene
+playing without the clock. `npm run screenshots:fallback` asserts the first of these.
+
+## Deploying
+
+Whatever serves this must keep four things true, all of them inherited from the live domain:
+
+1. **`/privacy.html` and `/terms.html` must keep resolving.** App Store Connect, both Rewenn
+   subscription products and the paywall inside the binary link there. The build emits each
+   document at both its directory URL and its `.html` alias for exactly this reason.
+2. **`cleanUrls` stays off**, or it rewrites `/.well-known/apple-app-site-association`.
+3. **Serve the AASA file as `application/json`.** It has no extension, so most hosts will not
+   infer it.
+4. **Keep the `/challenge/**` and `/invite/**` rewrites** — universal links rendered elsewhere.
+   This repo deliberately ships no static stand-in for them.
+
+Caching: hashed `dist/assets/` (including the WASM) `public, max-age=31536000, immutable`;
+`/rive/ewenn-scene.riv` and all HTML `no-cache`. Serve `.wasm` as `application/wasm`, and if you
+add a CSP it must allow `'wasm-unsafe-eval'`.
+
+## Manual QA
+
+The automated matrix cannot see the scene's interactions — they are sub-second transients inside
+the `.riv`, and falling snow defeats pixel diffing. Click through these by hand:
+
+- each tree shakes and drops snow (**known: the back-left tree does not** — see the contract)
+- the penguin jumps
+- the streetlamp toggles
+- `?phase=` changes the sky, and the lamp is lit for evening and night
+- keyboard focus is visible on every link
+- with reduced motion on, the scene starts paused on the correct phase
