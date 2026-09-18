@@ -1,4 +1,4 @@
-import schedule from '../phase-schedule.json';
+import schedule from '../phase-schedule.json' with { type: 'json' };
 
 export type Phase = 'night' | 'day' | 'noon' | 'evening';
 

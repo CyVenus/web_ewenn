@@ -426,6 +426,11 @@ html[data-page='doc'] body {
 }
 
 /* Bar scale, not page scale: the mark identifies the page, it no longer introduces it. */
+.page--doc .brand {
+  padding: 6px 8px 6px 0;
+  border-radius: 8px;
+}
+
 .page--doc .brand__icon {
   width: 32px;
   height: 32px;
@@ -434,6 +439,25 @@ html[data-page='doc'] body {
 
 .page--doc .brand__name {
   font-size: 1.125rem;
+}
+
+.brand--back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand__back-arrow {
+  display: inline-block;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: var(--weight-medium);
+  color: var(--action);
+  transition: transform 160ms ease;
+}
+
+.brand--back:hover .brand__back-arrow {
+  transform: translateX(-3px);
 }
 
 /*
@@ -504,7 +528,7 @@ html[data-page='doc'] body {
   }
 
   /* The index spans both rows so it can be sticky against the whole column, and starts level
-     with the back link rather than with the prose. */
+     with the masthead rather than with the prose. */
   .doc__masthead {
     grid-column: 2;
     grid-row: 1;
@@ -803,6 +827,16 @@ html[data-page='doc'] body {
   text-decoration: underline;
 }
 
+.doc__bottom-back {
+  margin-top: clamp(28px, 4vw, 44px);
+  padding-top: clamp(16px, 2.5vw, 24px);
+  border-top: 1px solid var(--hairline);
+}
+
+.doc__bottom-back .doc__back {
+  margin-bottom: 0;
+}
+
 .doc__updated {
   margin: 0;
   font-size: var(--type-caption);
@@ -891,6 +925,46 @@ html[data-page='doc'] body {
   .store-badge__img {
     height: 48px;
   }
+
+  .page--home .site-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-top: 8px;
+    padding: 8px 22px;
+    background: var(--footer-glass);
+    border: 1px solid var(--footer-border);
+    border-radius: 999px;
+    box-shadow:
+      var(--footer-lift),
+      0 0 0 1px var(--footer-rim),
+      inset 0 1px 0 rgb(255 255 255 / 90%),
+      inset 0 -1px 0 rgb(255 255 255 / 45%);
+    -webkit-backdrop-filter: blur(14px) saturate(165%);
+    backdrop-filter: blur(14px) saturate(165%);
+  }
+
+  .page--home .site-footer__copy {
+    order: 1;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    opacity: 0.85;
+  }
+
+  .page--home .site-footer__nav {
+    order: 2;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0 14px;
+  }
+
+  .page--home .site-footer__nav a {
+    padding: 3px 2px;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
 }
 
 /*
@@ -903,9 +977,16 @@ html[data-page='doc'] body {
     font-size: clamp(1.5rem, 1rem + 2vw, 2rem);
   }
 
-  .site-footer {
-    padding-left: 12px;
-    gap: 2px 12px;
+  .page--home .site-footer {
+    padding: 6px 12px;
+  }
+
+  .page--home .site-footer__nav {
+    gap: 0 8px;
+  }
+
+  .page--home .site-footer__nav a {
+    font-size: 0.75rem;
   }
 }
 

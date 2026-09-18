@@ -1,4 +1,4 @@
-import type { PhaseSchedule } from './phase';
+import type { PhaseSchedule } from './phase.ts';
 
 /**
  * Inline classic script that sets <html data-phase> before first paint.

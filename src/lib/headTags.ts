@@ -1,4 +1,4 @@
-import { isLiveAppStoreId } from '../config';
+import { isLiveAppStoreId } from '../config.ts';
 
 export type HeadTag = { tag: 'meta' | 'link'; attrs: Record<string, string> };
 

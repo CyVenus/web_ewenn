@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useLayoutEffect, useState, type RefObject } from 'react';
 import { uniqueSlugs } from '../lib/toc';
 
 export type Heading = { id: string; title: string };
@@ -44,6 +44,17 @@ export function pickActive(
  * Works on the rendered DOM rather than on the JSX, so the legal documents stay plain prose --
  * see `src/lib/toc.ts`. Assigning ids is idempotent, which is what makes StrictMode's double
  * effect harmless.
+ *
+ * A LAYOUT effect, and that is the whole point of it being one. Reading the DOM means the first
+ * render cannot know the headings, so `headings` starts empty and `DocToc` renders nothing --
+ * and in a plain `useEffect` the index then appeared in a LATER frame than the prose, dropping
+ * a 100px box in above the first paragraph and pushing the whole document down under the
+ * reader. Filmed on a throttled phone, the text painted at 464ms and jumped at 620ms.
+ *
+ * `useLayoutEffect` runs after the DOM is in place but before the browser paints, so the state
+ * it sets is flushed into the same frame: the index is there in the first painted frame and
+ * nothing moves afterwards. The cost is one querySelectorAll and a dozen getBoundingClientRect
+ * calls before paint, on a document that is already mounted.
  */
 export function useHeadings(ref: RefObject<HTMLElement | null>): {
   headings: Heading[];
@@ -52,7 +63,7 @@ export function useHeadings(ref: RefObject<HTMLElement | null>): {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = ref.current;
     if (!root) return;
 

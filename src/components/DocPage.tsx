@@ -27,7 +27,7 @@ export function DocPage({ doc }: { doc: Doc }) {
   return (
     <div className="page page--doc">
       <div className="overlay">
-        <SiteHeader />
+        <SiteHeader isDoc />
         <main className="overlay__main doc">
           {/*
             The masthead is a sibling of the prose rather than its first child, and that is what
@@ -36,13 +36,15 @@ export function DocPage({ doc }: { doc: Doc }) {
             and in three the grid lifts the index into the margin beside both.
           */}
           <header className="doc__masthead">
-            <a className="doc__back" href="/">{`← ${COPY.name}`}</a>
             <h1>{doc.title}</h1>
             <p className="doc__updated">{doc.updated}</p>
           </header>
           <DocToc headings={headings} activeId={activeId} open={railFits} />
           <article className="doc__article" ref={articleRef}>
             {doc.body}
+            <div className="doc__bottom-back">
+              <a className="doc__back" href="/">{`← ${COPY.name}`}</a>
+            </div>
           </article>
         </main>
         <SiteFooter currentPath={doc.path} />
