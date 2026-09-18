@@ -15,7 +15,7 @@ import { APP_STORE_LIVE, APP_STORE_URL } from '../config';
  * Deliberately never a <button>: there is nothing here to press.
  */
 export function AppStoreBadge() {
-  const artwork = <img className="store-badge__img" src={badgeUrl} alt="" width={168} height={56} />;
+  const artwork = <img className="store-badge__img" src={badgeUrl} alt="" width={204} height={68} />;
 
   if (!APP_STORE_LIVE) {
     return (

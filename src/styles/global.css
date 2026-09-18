@@ -248,31 +248,43 @@ html[data-page='doc'] body {
 }
 
 /*
- * Apple's official badge. The padding IS the required clear space (at least ¼ of the badge
- * height), which is why it sits on the link rather than as a margin on the image — clear space
- * has to belong to the thing being clicked. No background, border or shadow: the artwork may
- * not be altered or framed, and it already carries its own black lockup.
+ * Apple's official badge. Sizing referenced from Finch Care: 68px height on desktop,
+ * with clear space padding of at least ¼ of the badge height (17px).
+ * Clear space has to belong to the thing being clicked. No background, border or shadow:
+ * the artwork may not be altered or framed, and it already carries its own black lockup.
  */
 .store-badge {
   display: inline-block;
-  margin: 12px 0 -14px;
-  padding: 14px;
-  border-radius: 18px;
+  cursor: pointer;
+  margin: 15px 0 -17px;
+  padding: 17px;
+  border-radius: 20px;
   line-height: 0;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .store-badge__img {
-  height: 56px;
+  height: 68px;
   width: auto;
+  display: block;
 }
 
 /*
- * Pre-launch, the badge is an image rather than a link (see AppStoreBadge.tsx). It is styled
- * identically on purpose — Apple's artwork must not be greyed out, dimmed or otherwise
- * modified to signal "not yet", so the only difference is that there is nothing to click.
+ * Pre-launch, the badge is an image rather than a link (see AppStoreBadge.tsx).
+ * Cursor is pointer on hover, matching the interactive download button affordance.
  */
 .store-badge--pending {
-  cursor: default;
+  cursor: pointer;
+}
+
+.store-badge:hover,
+.store-badge:focus-visible,
+.store-badge:active,
+.store-badge__img:hover {
+  transform: none;
+  animation: none;
+  filter: none;
 }
 
 /* ---------------------------------------------------------------- footer */
@@ -916,15 +928,20 @@ html[data-page='doc'] body {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 478px) {
   .store-badge {
-    margin: 12px 0 -12px;
-    padding: 12px;
+    margin: 14px 0 -18px;
+    padding: 18px;
   }
 
   .store-badge__img {
-    height: 48px;
+    width: 220px;
+    max-width: 100%;
+    height: auto;
   }
+}
+
+@media (max-width: 767px) {
 
   .page--home .site-footer {
     display: flex;
@@ -1035,6 +1052,7 @@ html[data-page='doc'] body {
   .store-badge__img {
     /* Apple's floor is 40px. This is the one dimension here that is not ours to tune. */
     height: 40px;
+    width: auto;
   }
 
   .site-footer {
