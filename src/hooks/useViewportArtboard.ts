@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react';
 import { pickArtboard, type SceneArtboard } from '../lib/artboard';
+import { designViewport } from '../lib/zoomLock';
 
 export const RESIZE_DEBOUNCE_MS = 150;
 
-const currentArtboard = () => pickArtboard(window.innerWidth, window.innerHeight);
+/*
+ * The design viewport, not the real one. Under an active zoom lock they differ by the applied
+ * scale, and a 1440-wide layout counter-scaled from a 720px viewport still wants the desktop
+ * artboard — picking the phone one would reflow the scene the lock exists to hold still.
+ */
+const currentArtboard = () => {
+  const { width, height } = designViewport(window);
+  return pickArtboard(width, height);
+};
 
 export function useViewportArtboard(): SceneArtboard {
   const [artboard, setArtboard] = useState<SceneArtboard>(currentArtboard);

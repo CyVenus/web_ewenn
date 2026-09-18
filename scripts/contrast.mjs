@@ -1,15 +1,16 @@
 /**
  * Measures the real contrast of the hero copy in every phase.
  *
- * The hero has no panel: the light that lifts the type off the scene is a text-shadow bonded to
- * the glyphs. That makes "what is the background colour" a genuine question rather than a token
- * lookup — the answer is whatever the halo composited to over that phase's sky, which differs
- * per phase and per pixel.
+ * The hero has no panel and no halo behind the glyphs: the copy sits directly on the Rive scene.
+ * That makes "what is the background colour" a genuine question rather than a token lookup — the
+ * answer is whatever the scene renders behind those particular glyphs, which differs per phase,
+ * per viewport and per pixel. A sky token is the colour at the top of a gradient, not the colour
+ * the headline actually lands on.
  *
  * Method: for each phase, set `color: transparent` on the hero text. The glyphs vanish and the
- * shadow stays, so the pixels inside the text's bounding box are exactly the backdrop the glyphs
- * will sit on. Screenshot that box, decode it in a canvas, and take the DARKEST pixel — the worst
- * case for dark ink — then compute the WCAG ratio against --ink.
+ * scene behind them stays, so the pixels inside the text's bounding box are exactly the backdrop
+ * the glyphs will sit on. Screenshot that box, decode it in a canvas, and take the DARKEST pixel
+ * — the worst case for dark ink — then compute the WCAG ratio against --ink.
  *
  *   node scripts/contrast.mjs
  */

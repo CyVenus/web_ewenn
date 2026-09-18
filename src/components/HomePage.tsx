@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePhase } from '../hooks/usePhase';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useViewportArtboard } from '../hooks/useViewportArtboard';
+import { useZoomLock } from '../hooks/useZoomLock';
 import { supportsWebGL2 } from '../lib/webgl';
 import { Hero } from './Hero';
 import { RiveStage } from './RiveStage';
@@ -9,6 +10,7 @@ import { SiteFooter } from './SiteFooter';
 import { SiteHeader } from './SiteHeader';
 
 export function HomePage() {
+  useZoomLock();
   const phase = usePhase();
   const artboard = useViewportArtboard();
   const reducedMotion = useReducedMotion();

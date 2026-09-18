@@ -15,6 +15,7 @@
     "screenshots:fallback": "node scripts/screenshots.mjs fallback",
     "contrast": "node scripts/contrast.mjs",
     "layout": "node scripts/layout-audit.mjs",
+    "zoom": "node scripts/zoom-audit.mjs",
     "sync:assets": "node scripts/sync-assets.mjs",
     "check:assets": "node scripts/sync-assets.mjs --check"
   },

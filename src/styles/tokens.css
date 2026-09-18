@@ -1,18 +1,21 @@
 /*
  * Design tokens.
  *
- * Source of truth is DESIGN.md, the iOS app's design system. Two departures from it exist and
- * both are forced by this site's one structural difference from the app: text here sits on a
- * moving illustration rather than on a known surface.
+ * Source of truth is DESIGN.md, the iOS app's design system.
  *
- *   1. --text-secondary. DESIGN.md's `secondaryText` #64748B is correct for body text on a card
- *      and fails AA over the scene (3.73:1 on the day sky, 2.93:1 on night). It only clears
- *      4.5:1 once the surface behind it reaches ~90% white, which would destroy the frost.
- *   2. The type scale. DESIGN.md's sizes are anchored to a 390pt phone, so Display 32-36pt
- *      cannot transfer literally to a 2560px viewport. Each app value becomes a clamp floor.
+ * The site has two kinds of surface, and which one a token belongs to is the thing to know about
+ * it. The HOME page is type on a moving illustration, which is the one place DESIGN.md does not
+ * describe; the DOCUMENT pages are flat paper, which is exactly what DESIGN.md was drawn for and
+ * where its values are used unaltered. Every departure below is on the illustration's side of
+ * that line, and the reason is always the same: a colour that has to hold against four skies.
+ *
+ * One departure is not about the scene at all -- the type scale. DESIGN.md's sizes are anchored
+ * to a 390pt phone, so Display 32-36pt cannot transfer literally to a 2560px viewport, and each
+ * app value becomes a clamp floor instead. The document scale, which has a fixed measure rather
+ * than a window to fill, stays close to the app's own numbers.
  *
  * The app ships light-only (DESIGN.md, "The app ships light-only"), so every surface here is
- * light in all four phases. Only the sky changes value; the card changes temperature.
+ * light in all four phases; only the sky changes value.
  */
 :root {
   --font-brand: Fredoka, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
@@ -24,11 +27,26 @@
      "Your new / self-care partner.", and .hero__title-phrase is what keeps that break off
      the hyphen. */
   --type-display: clamp(2rem, 0.86rem + 2.6vw, 3.5rem);       /* [Display 32-36]        hero h1 */
-  --type-title: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);       /* [Screen title 26-30]   doc h1 */
   --type-brand: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem);       /* [Screen title 26-30]   wordmark */
-  --type-section: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);     /* [Section heading 20-22] doc h2 */
-  --type-subsection: 1.0625rem;                               /* [Section heading 20-22] doc h3 */
-  --type-body: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);          /* [Body 16-17]           subline, prose */
+  --type-body: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);          /* [Body 16-17]           hero subline */
+
+  /*
+   * The document scale is NOT the hero's, and it does not grow with the window.
+   *
+   * The clamp-floor treatment above exists because the hero is a headline on a 2560px
+   * illustration; a legal page is a 680px column of prose, and at the hero's ceiling — 20px body,
+   * 40px h1 — that column holds barely 50 characters a line and reads as a large-print edition.
+   * These stay close to the app's own values, which is what the published page at
+   * ewenn.app/privacy.html has always used: 32/20/16 on a 680px measure.
+   */
+  --type-title: clamp(1.6875rem, 1.5rem + 0.8vw, 2.125rem);   /* [Screen title 26-30]    doc h1  27-34 */
+  --type-section: clamp(1.25rem, 1.16rem + 0.4vw, 1.375rem);  /* [Section heading 20-22] doc h2  20-22 */
+  --type-subsection: 1.0625rem;                               /* [Section heading 20-22] doc h3  17 */
+  --type-doc-body: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);  /* [Body 16-17]            prose   16-17 */
+  /* The opening paragraph of a document, one step above body. Not a DESIGN.md style: the app has
+     no long-form reading surface, and a 3,600px legal page needs a way in that a title alone does
+     not give it. Deliberately closer to body than to the section heading above it. */
+  --type-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);     /*                         lead    17-19 */
   --type-button: 0.9375rem;                                   /* [Button 16-17]         back link */
   --type-caption: 0.875rem;                                   /* [Caption 13-14]        footer, updated */
 
@@ -45,36 +63,69 @@
      site is every interactive thing, the focus ring included. */
   --action: #137594;
 
-  /* AA-safe substitution for DESIGN.md `secondaryText` over translucent surfaces. See header. */
-  --text-secondary: #334155;
-
-  /* The document card is a lit surface in every phase; only its temperature changes. The home
-     page has no panel at all — see .hero__title in global.css. Near-opaque on purpose: at 55%
-     the fill stopped being a colour and became a smeared photograph of whatever sat behind it. */
-  --card-surface: rgb(255 255 255 / 90%);
-
-  /* Light-on-light needs a LIGHTER line, not a darker one: a crisp white rim reads as snow
-     catching the light on the top edge. DESIGN.md's hairline #DDE6F4 is 1.17:1 against the noon
-     sky — it divides two app surfaces, it is not an edge against an illustration. */
-  --card-border: rgb(255 255 255 / 92%);
-
-  /*
-   * Card material, composed rim → shade → contact → ambient. Two shadow layers rather than one:
-   * the tight contact layer is what makes the card sit ON the snow instead of hovering over a
-   * generic blur. The ambient layer carries a negative spread so it stays tucked underneath.
-   */
-  --card-rim: inset 0 1px 0 rgb(255 255 255 / 90%);
-  --card-shade: inset 0 -1px 0 rgb(16 42 67 / 8%);
-  --card-shadow-contact: 0 1px 2px rgb(16 42 67 / 10%);
-  --doc-shadow-ambient: 0 14px 44px -16px rgb(16 42 67 / 22%);
-
   /* The ring alone fails WCAG 1.4.11 over open sky: #137594 is 2.13:1 on the rendered night sky,
      2.78:1 on evening, 2.97:1 on day. The white halo sits behind and around it so the ring always
      borders white (5.25:1) rather than whatever the sky happens to be. */
   --focus-halo: 0 0 0 8px rgb(255 255 255 / 92%);
 
-  --footer-glass: rgb(255 255 255 / 62%);
-  --footer-border: rgb(255 255 255 / 70%);
+  /*
+   * The footer pill: glass, not a white wash.
+   *
+   * The pill lands on the snow bank at the foot of the scene, and a flat white fill on near-white
+   * snow has no edge at all -- it reads as a printed label rather than a pane laid over the
+   * illustration. So the fill is a top-lit gradient, brightest where light would land and thinner
+   * below, and the backdrop filter carries `saturate` as well as `blur`: the snow is faintly blue
+   * and pushing that blue is what makes the glass a visible region of its own instead of another
+   * patch of white.
+   *
+   * The rim is two hairlines, and it has to be, because the pill has two backdrops to survive.
+   * A white rim draws the edge over open sky and vanishes on snow; a cool one draws it on snow
+   * and vanishes over the night sky. One of the pair is always doing the work.
+   */
+  --footer-glass: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 64%) 0%,
+    rgb(255 255 255 / 46%) 48%,
+    rgb(238 246 253 / 40%) 100%
+  );
+  /* The white rim, for sky. Bright along the top edge and half that around the rest, which is how
+     a bevel actually catches light -- a uniform outline reads as a stroke, not a thickness. */
+  --footer-border: rgb(255 255 255 / 78%);
+  /* The cool rim, for snow. Low enough alpha to disappear against a dark sky rather than
+     outlining the pill in grey there. */
+  --footer-rim: rgb(16 42 67 / 9%);
+  /* What lifts the pill off the snow. Tinted with the scene's own shadow blue, not black. */
+  --footer-lift:
+    0 1px 2px rgb(16 42 67 / 5%),
+    0 12px 28px -14px rgb(16 42 67 / 28%);
+
+  /*
+   * The document pages' surface. One colour, at every hour, on every legal page.
+   *
+   * This is the published site's own background (ewenn.app/style.css `--background`), and the
+   * four skies deliberately do not reach here. A sky is a thing the Rive scene explains; behind a
+   * legal document it is just a colour that changes under you as you read, and for ten hours a
+   * day a purple one that every paragraph has to fight.
+   *
+   * Flat paper is also what lets these be DESIGN.md's own values rather than substitutes for
+   * them. Nothing on these pages is translucent any more, so there is no composite to compute
+   * through, and the two tokens the scene had forced a stand-in for are simply themselves again:
+   *
+   *   --hairline        #DDE6F4 is 1.17:1 on the noon sky and unusable there. On paper it is
+   *                     what it was drawn to be: the line between two surfaces.
+   *   --doc-secondary   `secondaryText` #64748B is 3.73:1 over the day sky and fails; on paper it
+   *                     is 4.61:1 and passes. The card it was drawn for is gone, so it is scoped
+   *                     to the documents by name rather than shadowing a site-wide token.
+   *
+   * And --action, which is 1.56:1 on the night sky and cannot carry text out there at all, is
+   * 5.08:1 here — which is why the section index can mark the current entry with the brand colour
+   * instead of borrowing weight from the ink.
+   */
+  --paper: #f8fcfd;
+  /* The one raised surface left on a document: the collapsed section index. DESIGN.md's `surface`. */
+  --doc-surface: #ffffff;
+  --hairline: #dde6f4;
+  --doc-secondary: #64748b;
 
   /* badgeSurface / badgeLabel. Opaque on purpose: DESIGN.md pairs them for 12.3:1, and that
      guarantee holds only at full opacity ("Prefer an opaque token to an alpha wash"). */
@@ -88,18 +139,12 @@ html[data-phase='day'] {
 
 html[data-phase='noon'] {
   --sky: #9BDEFE;
-  --card-surface: rgb(255 255 255 / 91%);
 }
 
 html[data-phase='evening'] {
   --sky: #F2AD71;
-  /* Warm cream, picking up the sky and the lit streetlamp. Composites to ~#FCEBD9. */
-  --card-surface: rgb(255 250 242 / 92%);
 }
 
 html[data-phase='night'] {
   --sky: #867BFB;
-  /* Moonlit white with a faint lavender cast. A dark slab here would be a web-only invention:
-     DESIGN.md pins the app to the light appearance in every phase. */
-  --card-surface: rgb(250 249 255 / 93%);
 }

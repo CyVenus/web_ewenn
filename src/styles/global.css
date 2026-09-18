@@ -9,6 +9,10 @@ html {
   background: var(--sky);
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
+  /* For the document pages' section links. Global rather than scoped because it affects only
+     programmatic and fragment scrolling — a visitor dragging a scrollbar is unaffected — and the
+     home page has no fragments to scroll to. Turned off under reduced motion at the foot of this file. */
+  scroll-behavior: smooth;
 }
 
 body {
@@ -48,12 +52,43 @@ a {
   min-height: 100svh;
 }
 
-/* Without the canvas, the flat sky needs a horizon or the page reads as an error. */
-.page--scene-failed,
-.page--doc {
+/* Without the canvas, the flat sky needs a horizon or the page reads as an error. The home page
+   is exactly one viewport tall, so a gradient on the element itself is already viewport-sized. */
+.page--scene-failed {
   background:
     radial-gradient(120% 60% at 50% 100%, var(--snow) 0 38%, transparent 38.5%),
     var(--sky);
+}
+
+/*
+ * The one place the flat stand-in is not allowed to be the token.
+ *
+ * --sky at night is #867BFB, the gradient's deep stop, and --ink on it is 4.35:1 -- under the 4.5
+ * the hero subline needs. The rendered scene never actually puts that value behind the headline;
+ * it lights that band to #988EFB, which measures 5.29:1 (scripts/contrast.mjs). With no halo on
+ * the type any more, the fallback is the only path where the deep stop reaches the glyphs, so it
+ * uses the colour the scene really produces up there instead. The other three skies are far
+ * clear of the line and keep their token.
+ */
+html[data-phase='night'] .page--scene-failed {
+  --sky: #988efb;
+}
+
+/*
+ * Document pages are PAPER, and the same paper at every hour.
+ *
+ * The four skies belong to the home page, where the Rive scene is there to explain them. Behind a
+ * legal document a sky is only a colour that changes under you while you read -- and for ten
+ * hours a day a saturated purple one that every paragraph has to fight. The published page at
+ * ewenn.app/privacy.html has always been a flat, quiet #F8FCFD, and this is that page.
+ *
+ * `data-page="doc"` is an attribute in each document's static HTML, not something React sets, so
+ * the paper is there at first paint. The pre-paint script still writes `data-phase` beside it for
+ * the home page; nothing on a document reads it any more.
+ */
+html[data-page='doc'],
+html[data-page='doc'] body {
+  background: var(--paper);
 }
 
 /* ---------------------------------------------------------------- Rive layer */
@@ -153,11 +188,23 @@ a {
 }
 
 /*
- * No panel behind the hero copy. Any rectangle here reads as a pane of glass laid over the
- * illustration — on wide screens it covers the sun, the pines and the streetlamp — and a
- * soft-edged bloom is still a rectangle, just a blurred one, greying out whatever it overlaps.
- * So the light that lifts the type off the sky is bonded to the letterforms instead, which
- * leaves the whole scene visible behind it.
+ * No panel behind the hero copy, and no light behind the glyphs either. Any rectangle here reads
+ * as a pane of glass laid over the illustration — on wide screens it covers the sun, the pines
+ * and the streetlamp — and a soft-edged bloom is still a rectangle, just a blurred one, greying
+ * out whatever it overlaps.
+ *
+ * The type carried a white text-shadow for the same reason, and it was removed: at display size
+ * the halo read AS a halo rather than as diffused light, which is the one thing it was drawn not
+ * to look like.
+ *
+ * On the rendered scene it was not load-bearing. Measured, not assumed — scripts/contrast.mjs
+ * puts the worst case at 5.29:1, the night sky behind the subline, against the 4.5 it needs.
+ * The margin is thin enough to be worth knowing: --ink clears 4.5:1 only on a backdrop of
+ * luminance 0.273 or above, and the night sky is the one phase anywhere near it. A future sky
+ * below that line needs a backdrop for the type again, not a darker ink.
+ *
+ * The halo WAS load-bearing on the no-canvas fallback, which is why .page--scene-failed now
+ * pins its own night sky. See that rule.
  *
  * Centred, stacked directly above the centred penguin: the scene is symmetrical and a
  * left-ragged block fights it.
@@ -173,12 +220,6 @@ a {
   line-height: 1.08;
   letter-spacing: -0.01em;
   color: var(--ink);
-  /* Snow-light behind the glyphs: the job a card used to do, done by the type itself. Three
-     stops rather than one so it reads as diffused light and never as an outline. */
-  text-shadow:
-    0 0 24px rgb(255 255 255 / 92%),
-    0 0 52px rgb(255 255 255 / 72%),
-    0 2px 0 rgb(255 255 255 / 55%);
 }
 
 .hero__title-phrase {
@@ -204,16 +245,6 @@ a {
      a moving night sky and legibility outranks tonal hierarchy, which scale already carries. */
   color: var(--ink);
   text-wrap: pretty;
-  /*
-   * Tighter and brighter than the headline: small text needs the backdrop closer in, and the
-   * subline is the one pair with no headroom to spare. The first stop is opaque and tight so
-   * the glyph always sits on white even when a cloud or a snowflake drifts behind it — night
-   * is the worst case, and the backdrop there moves.
-   */
-  text-shadow:
-    0 0 6px rgb(255 255 255),
-    0 0 16px rgb(255 255 255 / 98%),
-    0 0 34px rgb(255 255 255 / 82%);
 }
 
 /*
@@ -254,17 +285,52 @@ a {
   justify-content: center;
   gap: 4px 18px;
   margin-top: 12px;
-  padding: 6px 8px 6px 18px;
+  /* 18px each side of the words: the links carry 2px of their own, so the right inset is 16. */
+  padding: 6px 16px 6px 18px;
   font-size: var(--type-caption);
   color: var(--ink-soft);
   background: var(--footer-glass);
   border: 1px solid var(--footer-border);
-  border-radius: 24px;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* A true pill. At 24px on a 56px-tall box the ends were rounded rectangles, which is the one
+     shape the scene has none of. */
+  border-radius: 999px;
+  /*
+   * Four layers, outside in: the lift off the snow, the cool rim that draws the edge there, and
+   * two insets -- a bright line along the top where the light lands, and a dimmer one along the
+   * bottom where it comes back up off the snow. Together they give the pane a thickness. The
+   * white rim in `border` is the fourth, and the one that shows over open sky.
+   */
+  box-shadow:
+    var(--footer-lift),
+    0 0 0 1px var(--footer-rim),
+    inset 0 1px 0 rgb(255 255 255 / 90%),
+    inset 0 -1px 0 rgb(255 255 255 / 45%);
+  /* `saturate` matters as much as `blur` here -- see --footer-glass. */
+  -webkit-backdrop-filter: blur(14px) saturate(165%);
+  backdrop-filter: blur(14px) saturate(165%);
   /* The pill itself, not just its links: a glass surface that clicks through to a tree behind
      it would be a puzzle rather than a feature. */
   pointer-events: auto;
+}
+
+/*
+ * Glass needs something behind it. Where the blur cannot run -- no backdrop-filter, or a reader
+ * who has asked the system for less transparency -- a 46% wash over a moving sky is not a softer
+ * version of the effect, it is just thin. Both cases collapse to the opaque snow the pill has
+ * been sitting on all along, and everything that drew the pane's edges stays.
+ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-footer {
+    background: rgb(248 252 254 / 94%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .site-footer {
+    background: var(--snow);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .site-footer__copy {
@@ -298,28 +364,341 @@ a {
 
 /* ---------------------------------------------------------------- documents */
 
+/*
+ * The document shell.
+ *
+ * The overlay stops being a three-row grid here and becomes a flex column, because the brand bar
+ * has to stick. A sticky element only travels inside its own containing block, and in the grid
+ * that block is the header's `auto` row — the height of the header itself, so it would not move
+ * at all. In a flex column the containing block is the whole overlay, which on these pages is
+ * thousands of pixels tall.
+ *
+ * The overlay's padding goes with it: the bar spans the full width, so each child now owns its
+ * own inset instead of inheriting one.
+ */
 .page--doc .overlay {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   pointer-events: auto;
 }
 
-.doc {
-  align-content: start;
-  padding: clamp(12px, 4vh, 48px) 0 clamp(24px, 5vh, 56px);
+/*
+ * The measurements the whole page is built from. Everything that has to line up with the prose —
+ * the bar, the footer, the index — is derived from these rather than repeating a number.
+ *
+ * 680px is the published page's own measure (ewenn.app/style.css `.doc`), and at 16–17px it holds
+ * about 68 characters to a line, which is the middle of the range long prose reads best at.
+ */
+.page--doc {
+  --bar-h: 60px;
+  --doc-column: 680px;
+  --doc-rail: 220px;
+  --doc-gap: 48px;
+  --doc-pad: max(24px, env(safe-area-inset-left), env(safe-area-inset-right));
+  /* rail + gap + column + gap + a spacer equal to the rail. See the .doc grid. */
+  --doc-width: calc(var(--doc-rail) * 2 + var(--doc-gap) * 2 + var(--doc-column));
+  /* What the bar actually occupies, notch included — the offset every sticky and scroll-margin uses. */
+  --bar-total: calc(var(--bar-h) + env(safe-area-inset-top, 0px));
 }
 
-.doc__article {
-  width: min(640px, 100%);
-  padding: clamp(24px, 4vw, 40px);
-  border-radius: 28px;
-  background: var(--card-surface);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--card-rim), var(--card-shade), var(--card-shadow-contact), var(--doc-shadow-ambient);
+/*
+ * A slim bar rather than the home page's free-floating mark: over 3,600px of scrolling the way
+ * back has to stay reachable.
+ *
+ * Flat paper and a hairline, with no frost. The blur was doing real work when the bar floated
+ * over a sky and had to lift its own contrast off it; over a flat background of the same colour
+ * it is an effect with nothing left to show, and it costs a compositing layer on every scroll.
+ *
+ * The inline padding is what aligns the mark with the page rather than with the window corner:
+ * it lands on the left edge of the content block — the index's edge where there is an index, and
+ * the prose's edge where there is not.
+ */
+.page--doc .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  min-height: var(--bar-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-inline: max(var(--doc-pad), calc((100% - var(--doc-column)) / 2));
+  background: var(--paper);
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* Bar scale, not page scale: the mark identifies the page, it no longer introduces it. */
+.page--doc .brand__icon {
+  width: 32px;
+  height: 32px;
+  box-shadow: 0 2px 8px rgb(16 42 67 / 14%);
+}
+
+.page--doc .brand__name {
+  font-size: 1.125rem;
+}
+
+/*
+ * The focus halo is a scene fitting. --action is 2.13:1 on the night sky, so out there the ring
+ * needs a white backing to border against; on paper it is 5.08:1, and the halo is then just a
+ * white smudge around an already legible ring.
+ */
+.page--doc :focus-visible {
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/*
+ * Short viewports, which on a document page means zoom far more often than it means a phone on
+ * its side — see the note above the hero's own short-viewport block. A 60px bar is a fourteenth
+ * of a laptop window and a third of the 180px one that 500% zoom produces, so it shrinks first
+ * and then stops sticking altogether: below 420px, the height it would hold is worth more to the
+ * reader than the shortcut home, which is still one scroll-to-top away.
+ */
+@media (max-height: 620px) {
+  .page--doc {
+    --bar-h: 48px;
+  }
+
+  .page--doc .brand__icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .page--doc .brand__name {
+    font-size: 1.0625rem;
+  }
+}
+
+@media (max-height: 420px) {
+  .page--doc .site-header {
+    position: static;
+  }
+}
+
+/* ---------------------------------------------------------------- document layout */
+
+.doc {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, var(--doc-column));
+  justify-content: center;
+  justify-items: stretch;
+  align-content: start;
+  row-gap: clamp(28px, 4vw, 40px);
+  padding: clamp(32px, 5vh, 56px) var(--doc-pad) 0;
+}
+
+/*
+ * The index breakpoint, and the reason it is 1280 rather than the width the index alone needs.
+ *
+ * A two-column grid of index + prose is centred as a PAIR, which pushes the prose right of the
+ * window's centre by half the index — the thing you notice first and then cannot stop noticing.
+ * So there is a third column, empty, exactly as wide as the index: the prose sits dead centre and
+ * the index occupies space that was doing nothing. That costs 1216px of content plus its gutters,
+ * and below it the index is better as the collapsed block above the prose than as a squeezed
+ * column.
+ */
+@media (min-width: 1280px) {
+  .doc {
+    grid-template-columns: var(--doc-rail) minmax(0, var(--doc-column)) var(--doc-rail);
+    column-gap: var(--doc-gap);
+  }
+
+  /* The index spans both rows so it can be sticky against the whole column, and starts level
+     with the back link rather than with the prose. */
+  .doc__masthead {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .doc__toc {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .doc__article {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .page--doc .site-header {
+    padding-inline: max(var(--doc-pad), calc((100% - var(--doc-width)) / 2));
+  }
+}
+
+/* Aligned to the prose, not to the window, and flat: the frosted pill belongs over a scene. */
+.page--doc .site-footer {
+  align-self: center;
+  width: min(calc(var(--doc-column) + var(--doc-pad) * 2), 100%);
+  margin: clamp(40px, 6vh, 72px) 0 max(28px, env(safe-area-inset-bottom));
+  padding: 20px var(--doc-pad) 0;
+  justify-content: flex-start;
+  gap: 4px 18px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--doc-secondary);
+}
+
+/* ---------------------------------------------------------------- section index */
+
+/*
+ * One element, two presentations. At the index breakpoint DocToc renders it open and its summary
+ * is hidden; below that it is an ordinary closed <details> above the prose, which is where a
+ * 4,800px phone page needs it most. An index and a separate mobile list would put two navigation
+ * landmarks in the accessibility tree describing the same links.
+ *
+ * Collapsed, it is a card, because a control has to look like one. Open in the margin it is not:
+ * a panel out there would be a second slab competing with the prose, so it becomes what a margin
+ * note is — a hairline and a list of words.
+ */
+.doc__toc {
+  background: var(--doc-surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+}
+
+.doc__toc-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-radius: 14px;
+  font-size: var(--type-button);
+  font-weight: var(--weight-medium);
   color: var(--ink);
+  cursor: pointer;
+  /* Both are needed to drop the disclosure triangle: the pseudo-element is WebKit, the
+     list-style is everyone else. */
+  list-style: none;
+}
+
+.doc__toc-summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc__toc-summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--doc-secondary);
+  border-bottom: 2px solid var(--doc-secondary);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.doc__toc[open] .doc__toc-summary::after {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+/* Shown only where the summary is hidden. aria-hidden in the markup, because the nav around it
+   already carries the same words as its accessible name. */
+.doc__toc-title {
+  display: none;
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--doc-secondary);
+}
+
+.doc__toc-list {
+  margin: 0;
+  padding: 0 8px 10px;
+  list-style: none;
+}
+
+.doc__toc-link {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.doc__toc-link:hover {
+  color: var(--action);
+}
+
+/*
+ * The current section, in the brand colour — which is only possible because the background is
+ * constant. On the night sky --action was 1.56:1, and the entry had to be marked with weight and
+ * an ink-coloured bar instead; on paper it is 5.08:1 and can simply be the colour it is for.
+ */
+.doc__toc-link.is-current {
+  color: var(--action);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 1280px) {
+  .doc__toc {
+    position: sticky;
+    /* align-self is what stops the panel stretching to the prose's height; without it there is
+       nothing for `top` to hold in place. */
+    align-self: start;
+    top: calc(var(--bar-total) + 40px);
+    max-height: calc(100svh - var(--bar-total) - 80px);
+    overflow-y: auto;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .doc__toc-summary {
+    display: none;
+  }
+
+  .doc__toc-title {
+    display: block;
+    padding-left: 17px;
+  }
+
+  /* The list's own rule, with each entry's marker sitting ON it: a 2px border over the 1px line,
+     pulled back by the difference, so lighting an entry never moves the text it marks. */
+  .doc__toc-list {
+    padding: 0;
+    border-left: 1px solid var(--hairline);
+  }
+
+  .doc__toc-link {
+    margin-left: -1px;
+    padding: 7px 0 7px 16px;
+    border-left: 2px solid transparent;
+    border-radius: 0;
+  }
+
+  .doc__toc-link.is-current {
+    border-left-color: var(--action);
+  }
+}
+
+/* ---------------------------------------------------------------- the document */
+
+/*
+ * No card.
+ *
+ * The prose used to sit on a rounded, shadowed, near-opaque slab, because it had to lift itself
+ * off a moving illustration. Nothing is behind it now but paper of a single colour, and a card on
+ * a background it nearly matches is a 3,600px rectangle outlined for no reason. So the text sits
+ * on the page, and the measure, the rules between sections and the space around them do the work
+ * the border was pretending to do.
+ */
+.doc__article {
+  width: 100%;
+  color: var(--ink);
+  font-size: var(--type-doc-body);
+  line-height: 1.6;
   text-align: left;
 }
 
-.doc__article h1 {
-  margin: 0 0 6px;
+.doc__masthead h1 {
+  margin: 0 0 8px;
   font-size: var(--type-title);
   font-weight: var(--weight-semibold);
   line-height: 1.15;
@@ -327,24 +706,57 @@ a {
   text-wrap: balance;
 }
 
+/*
+ * A hairline above every section but the first. Headings separated by whitespace alone gave the
+ * page one undivided face; the rule is what makes a long document look like it has parts. The
+ * first is the exception — a rule there would divide a title from the document it names.
+ */
 .doc__article h2 {
-  margin: clamp(28px, 4vw, 40px) 0 12px;
+  margin: clamp(36px, 4.6vw, 48px) 0 12px;
+  padding-top: clamp(24px, 3vw, 28px);
+  border-top: 1px solid var(--hairline);
   font-size: var(--type-section);
-  font-weight: var(--weight-medium);
-  line-height: 1.25;
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
   letter-spacing: -0.01em;
 }
 
+.doc__article h2:first-of-type {
+  margin-top: clamp(28px, 3.4vw, 36px);
+  padding-top: 0;
+  border-top: 0;
+}
+
 .doc__article h3 {
-  margin: clamp(20px, 2.6vw, 28px) 0 8px;
+  margin: clamp(20px, 2.6vw, 26px) 0 8px;
   font-size: var(--type-subsection);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   line-height: 1.35;
 }
 
+/* Jumped to from the index, a heading must clear the sticky bar rather than hide under it. */
+.doc__article h2,
+.doc__article h3 {
+  scroll-margin-top: calc(var(--bar-total) + 20px);
+}
+
+/* The opening paragraph, one step up. A document this long needs a way in, and the title alone
+   is not one. Support opens on a .doc__note instead, where this correctly does not apply. */
+.doc__article > p:first-child {
+  margin-bottom: 18px;
+  font-size: var(--type-lead);
+  line-height: 1.55;
+}
+
+/*
+ * Primary ink for the prose, not a secondary tone. The published page does the same, and it is
+ * the right call for a document whose whole purpose is to be read closely: the hierarchy is
+ * already carried by scale and by the rules between sections, and spending it again on a lighter
+ * body colour only makes the part that matters most the hardest part to read.
+ */
 .doc__article p,
 .doc__article li {
-  color: var(--text-secondary);
+  color: var(--ink);
   text-wrap: pretty;
 }
 
@@ -354,7 +766,7 @@ a {
 
 .doc__article ul {
   margin: 0 0 16px;
-  padding-left: 1.35em;
+  padding-left: 22px;
 }
 
 .doc__article li {
@@ -367,50 +779,53 @@ a {
 
 .doc__article strong {
   font-weight: var(--weight-semibold);
-  color: var(--ink);
 }
 
 .doc__article a {
   color: var(--action);
   text-decoration: underline;
   text-underline-offset: 3px;
-  /* Email addresses are the longest unbroken strings on these pages; without this they push
-     the card wider than a phone. */
+  /* Email addresses are the longest unbroken strings on these pages; without this they push the
+     column wider than a phone. */
   overflow-wrap: anywhere;
 }
 
-/* Specificity, not decoration: `.doc__article a` would otherwise recolour the back link. */
-.doc__article .doc__back {
+.doc__back {
   display: inline-block;
-  margin-bottom: clamp(14px, 2.4vw, 22px);
-  padding: 6px 0;
+  margin-bottom: clamp(24px, 3.4vw, 32px);
   font-size: var(--type-button);
   font-weight: var(--weight-medium);
-  color: var(--text-secondary);
+  color: var(--action);
   text-decoration: none;
 }
 
-.doc__article .doc__back:hover {
+.doc__back:hover {
   text-decoration: underline;
 }
 
-/* Same reason: `.doc__article p` outranks a lone `.doc__updated`. */
-.doc__article .doc__updated {
-  margin: 0 0 clamp(20px, 3vw, 32px);
+.doc__updated {
+  margin: 0;
   font-size: var(--type-caption);
+  color: var(--doc-secondary);
 }
 
-/* The one passage on each page worth stopping at. */
+/*
+ * The one passage on each page worth stopping at, and now the only colour on it.
+ *
+ * DESIGN.md's badgeSurface/badgeLabel pair, kept rather than flattened to the published page's
+ * white-on-hairline: on a page this quiet a white block on near-white paper says nothing, and
+ * these two are the app's own way of saying "this matters", at 12.6:1.
+ */
 .doc__note {
-  margin: clamp(18px, 2.5vw, 26px) 0;
-  padding: clamp(16px, 2.4vw, 22px);
-  border-radius: 18px;
+  margin: clamp(18px, 2.5vw, 24px) 0;
+  padding: clamp(16px, 2.2vw, 20px);
+  border-radius: 14px;
   color: var(--badge-label);
   background: var(--badge-surface);
 }
 
 /* DESIGN.md: badgeLabel is the only label for a badgeSurface fill. Links keep --action, which
-   is 4.81:1 on this fill. */
+   is 4.76:1 on this fill. */
 .doc__note p,
 .doc__note li,
 .doc__note strong {
@@ -620,5 +1035,70 @@ a {
   .scene,
   body {
     transition: none;
+  }
+
+  /* A section link should land you there, not fly you there. */
+  html {
+    scroll-behavior: auto;
+  }
+
+  .doc__toc-summary::after {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- print */
+
+/*
+ * These are legal documents: they get printed, and they get saved to PDF as a record of what the
+ * terms said on a given day. So the chrome goes, the decoration goes, and what is left is the
+ * text, black on white, with every link's destination spelled out — a URL that only exists as a
+ * colour is lost the moment the page leaves the screen.
+ */
+@media print {
+  .page--doc .site-header,
+  .doc__toc,
+  .doc__back,
+  .site-footer__nav {
+    display: none;
+  }
+
+  html[data-page='doc'],
+  html[data-page='doc'] body,
+  .page--doc {
+    background: #fff;
+    color: #000;
+  }
+
+  .doc {
+    display: block;
+    padding: 0;
+  }
+
+  .doc__article {
+    width: auto;
+    color: #000;
+  }
+
+  .doc__article p,
+  .doc__article li,
+  .doc__article a,
+  .doc__note {
+    color: #000;
+    background: none;
+  }
+
+  /* Keep a heading with the paragraph it introduces. */
+  .doc__article h2,
+  .doc__article h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .doc__article a[href^='http']::after,
+  .doc__article a[href^='mailto']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    word-break: break-all;
   }
 }
