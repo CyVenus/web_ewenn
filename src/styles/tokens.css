@@ -59,6 +59,34 @@
   --ink: #1E293B;          /* primaryText */
   --ink-soft: #334155;
 
+  /*
+   * Hero Typography & Contrast Tokens.
+   *
+   * The home page sits directly over a dynamic sky and moving artboard.
+   * Across the 4 timelines (day, noon, evening, night), lighting changes dramatically:
+   * - At noon, the bright golden-yellow sun sits directly behind the headline and subline.
+   * - At night, the deep violet sky requires higher luminosity separation.
+   * - In the evening, the warm peach/amber sky harmonizes best with deep plum/espresso ink.
+   * - By day, the crisp cyan sky calls for deep arctic navy ink.
+   *
+   * Phase tokens set optimal text color, opacity, text-shadow cushions, and ambient glow.
+   */
+  --hero-title-color: #0c1e36;
+  --hero-title-opacity: 1;
+  --hero-title-shadow:
+    0 1px 2px rgb(255 255 255 / 75%),
+    0 0 20px rgb(255 255 255 / 45%);
+  --hero-subline-color: #16283e;
+  --hero-subline-opacity: 0.94;
+  --hero-subline-shadow:
+    0 1px 2px rgb(255 255 255 / 65%),
+    0 0 16px rgb(255 255 255 / 35%);
+  --hero-ambient-glow: radial-gradient(
+    ellipse 65% 50% at center,
+    rgb(255 255 255 / 22%) 0%,
+    rgb(255 255 255 / 0%) 75%
+  );
+
   /* actionPrimary. DESIGN.md scopes it to "Primary buttons, CTAs, links, active", which on this
      site is every interactive thing, the focus ring included. */
   --action: #137594;
@@ -135,16 +163,85 @@
 
 html[data-phase='day'] {
   --sky: #81CBEE;
+  --hero-title-color: #0c1e36;
+  --hero-title-opacity: 1;
+  --hero-title-shadow:
+    0 1px 2px rgb(255 255 255 / 75%),
+    0 0 20px rgb(255 255 255 / 45%);
+  --hero-subline-color: #16283e;
+  --hero-subline-opacity: 0.92;
+  --hero-subline-shadow:
+    0 1px 2px rgb(255 255 255 / 65%),
+    0 0 16px rgb(255 255 255 / 35%);
+  --hero-ambient-glow: radial-gradient(
+    ellipse 65% 50% at center,
+    rgb(255 255 255 / 20%) 0%,
+    rgb(255 255 255 / 0%) 75%
+  );
 }
 
 html[data-phase='noon'] {
   --sky: #9BDEFE;
+  /* At noon, the bright yellow sun sits directly behind the copy.
+     Ultra-deep midnight obsidian ink with high subline opacity and a soft luminous
+     multi-layer halo provides crisp contrast across the sun rim and sky boundary. */
+  --hero-title-color: #071321;
+  --hero-title-opacity: 1;
+  --hero-title-shadow:
+    0 1px 3px rgb(255 255 255 / 90%),
+    0 0 18px rgb(255 255 255 / 65%),
+    0 0 36px rgb(255 255 255 / 45%);
+  --hero-subline-color: #0f1f33;
+  --hero-subline-opacity: 0.96;
+  --hero-subline-shadow:
+    0 1px 2px rgb(255 255 255 / 85%),
+    0 0 16px rgb(255 255 255 / 60%),
+    0 0 28px rgb(255 255 255 / 35%);
+  --hero-ambient-glow: radial-gradient(
+    ellipse 65% 50% at center,
+    rgb(255 255 255 / 32%) 0%,
+    rgb(255 255 255 / 0%) 75%
+  );
 }
 
 html[data-phase='evening'] {
   --sky: #F2AD71;
+  /* Sunset amber: rich espresso-plum charcoal ink harmonizes with warm dusk illumination. */
+  --hero-title-color: #1a0f24;
+  --hero-title-opacity: 1;
+  --hero-title-shadow:
+    0 1px 2px rgb(255 248 238 / 75%),
+    0 0 22px rgb(255 235 210 / 50%);
+  --hero-subline-color: #281b33;
+  --hero-subline-opacity: 0.92;
+  --hero-subline-shadow:
+    0 1px 2px rgb(255 248 238 / 65%),
+    0 0 16px rgb(255 235 210 / 35%);
+  --hero-ambient-glow: radial-gradient(
+    ellipse 65% 50% at center,
+    rgb(255 245 235 / 22%) 0%,
+    rgb(255 245 235 / 0%) 75%
+  );
 }
 
 html[data-phase='night'] {
   --sky: #867BFB;
+  /* Deep violet night: ultra-deep midnight indigo with moonlight-white starlit edge halo. */
+  --hero-title-color: #080718;
+  --hero-title-opacity: 1;
+  --hero-title-shadow:
+    0 1px 3px rgb(255 255 255 / 85%),
+    0 0 20px rgb(220 230 255 / 65%),
+    0 0 38px rgb(190 205 255 / 35%);
+  --hero-subline-color: #13112b;
+  --hero-subline-opacity: 0.95;
+  --hero-subline-shadow:
+    0 1px 2px rgb(255 255 255 / 80%),
+    0 0 16px rgb(220 230 255 / 55%),
+    0 0 28px rgb(190 205 255 / 25%);
+  --hero-ambient-glow: radial-gradient(
+    ellipse 65% 50% at center,
+    rgb(255 255 255 / 24%) 0%,
+    rgb(255 255 255 / 0%) 75%
+  );
 }

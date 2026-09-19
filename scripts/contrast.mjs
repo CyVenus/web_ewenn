@@ -89,6 +89,22 @@ async function run() {
       await page.waitForSelector('.scene.is-ready, .page--scene-failed', { timeout: 20_000 });
       await page.waitForTimeout(1600);
 
+      // Read each element's rendered text color before hiding it
+      const colors = {};
+      for (const [label, selector] of [
+        ['title', '.hero__title'],
+        ['subline', '.hero__subline'],
+      ]) {
+        const el = await page.$(selector);
+        if (el) {
+          colors[label] = await el.evaluate((node) => {
+            const raw = window.getComputedStyle(node).color;
+            const match = raw.match(/\d+/g);
+            return match ? match.slice(0, 3).map(Number) : [0x1e, 0x29, 0x3b];
+          });
+        }
+      }
+
       // Hide the glyph fill, keep the shadow: what remains inside the box IS the backdrop.
       await page.addStyleTag({ content: '.hero__title,.hero__subline{color:transparent !important}' });
       await page.waitForTimeout(200);
@@ -101,13 +117,15 @@ async function run() {
         if (!el) continue;
         const buffer = await el.screenshot();
         const worst = await darkestPixel(decoder, buffer);
-        const ratio = contrast(INK, worst);
+        const textColor = colors[label] ?? INK;
+        const ratio = contrast(textColor, worst);
         // The headline is >= 24px in every viewport here, so it is "large text" at 3:1.
         const required = label === 'title' ? 3 : 4.5;
         rows.push({
           viewport: viewport.name,
           phase,
           element: label,
+          textColor: hex(textColor),
           backdropWorst: hex(worst),
           ratio: Number(ratio.toFixed(2)),
           required,
@@ -127,11 +145,11 @@ async function run() {
 
   const pad = (s, n) => String(s).padEnd(n);
   console.log(
-    `${pad('viewport', 20)}${pad('phase', 10)}${pad('element', 11)}${pad('worst backdrop', 16)}${pad('ratio', 8)}${pad('need', 6)}result`,
+    `${pad('viewport', 20)}${pad('phase', 10)}${pad('element', 11)}${pad('text color', 12)}${pad('worst backdrop', 16)}${pad('ratio', 8)}${pad('need', 6)}result`,
   );
   for (const r of rows) {
     console.log(
-      `${pad(r.viewport, 20)}${pad(r.phase, 10)}${pad(r.element, 11)}${pad(r.backdropWorst, 16)}${pad(r.ratio, 8)}${pad(r.required, 6)}${r.pass ? 'PASS' : 'FAIL'}`,
+      `${pad(r.viewport, 20)}${pad(r.phase, 10)}${pad(r.element, 11)}${pad(r.textColor, 12)}${pad(r.backdropWorst, 16)}${pad(r.ratio, 8)}${pad(r.required, 6)}${r.pass ? 'PASS' : 'FAIL'}`,
     );
   }
   const failed = rows.filter((r) => !r.pass);

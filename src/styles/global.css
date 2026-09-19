@@ -210,7 +210,20 @@ html[data-page='doc'] body {
  * left-ragged block fights it.
  */
 .hero__card {
+  position: relative;
   text-align: center;
+}
+
+.hero__card::before {
+  content: '';
+  position: absolute;
+  inset: -16% -12%;
+  background: var(--hero-ambient-glow);
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(24px);
+  transition: background 400ms ease;
 }
 
 .hero__title {
@@ -219,7 +232,10 @@ html[data-page='doc'] body {
   font-weight: var(--weight-semibold);
   line-height: 1.08;
   letter-spacing: -0.01em;
-  color: var(--ink);
+  color: var(--hero-title-color);
+  opacity: var(--hero-title-opacity);
+  text-shadow: var(--hero-title-shadow);
+  transition: color 400ms ease, text-shadow 400ms ease;
 }
 
 .hero__title-phrase {
@@ -239,12 +255,14 @@ html[data-page='doc'] body {
      block rather than a paragraph that happens to sit under it. */
   max-width: 48ch;
   font-size: var(--type-body);
+  font-weight: var(--weight-medium);
   line-height: 1.45;
-  /* Primary ink, not the secondary tone the document pages use. On a card a lighter body
-     colour aids long-form reading against a known backdrop; out on the scene the backdrop is
-     a moving night sky and legibility outranks tonal hierarchy, which scale already carries. */
-  color: var(--ink);
+  color: var(--hero-subline-color);
+  opacity: var(--hero-subline-opacity);
+  text-shadow: var(--hero-subline-shadow);
   text-wrap: pretty;
+  --enter-opacity: var(--hero-subline-opacity);
+  transition: color 400ms ease, opacity 400ms ease, text-shadow 400ms ease;
 }
 
 /*
@@ -968,7 +986,7 @@ html[data-page='doc'] body {
     transform: translateY(8px);
   }
   to {
-    opacity: 1;
+    opacity: var(--enter-opacity, 1);
     transform: none;
   }
 }
