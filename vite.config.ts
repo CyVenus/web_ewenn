@@ -9,7 +9,7 @@ import { buildHeadTags } from './src/lib/headTags.ts';
 import { PHASE_SCHEDULE } from './src/lib/phase.ts';
 import { buildPrePaintScript } from './src/lib/prepaint.ts';
 import { DOC_ROUTES, canonicalPath, docAliases } from './src/lib/routes.ts';
-import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules } from './src/lib/warmup.ts';
+import { buildFontPreloads, buildSpeculationRules, fontPreloadWeights } from './src/lib/warmup.ts';
 
 const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -22,8 +22,8 @@ const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url))
  * Vite serves straight out of node_modules. A weight that cannot be found is simply left out —
  * a missing preload costs a reflow, a wrong one costs a duplicate download.
  */
-function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle']): string[] {
-  return FONT_WEIGHTS.flatMap((weight) => {
+function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle'], path: string): string[] {
+  return fontPreloadWeights(path).flatMap((weight) => {
     const stem = `fredoka-latin-${weight}-normal`;
     if (!bundle) return [`/node_modules/@fontsource/fredoka/files/${stem}.woff2`];
     const name = Object.keys(bundle).find(
@@ -53,7 +53,7 @@ function ewennHead(): Plugin {
            * worth more than a head start on the next one, and the order tags appear in the head
            * is the order the browser discovers them in.
            */
-          ...buildFontPreloads(fontPreloadHrefs(ctx.bundle)).map((headTag) => ({
+          ...buildFontPreloads(fontPreloadHrefs(ctx.bundle, path)).map((headTag) => ({
             tag: headTag.tag,
             attrs: headTag.attrs,
             injectTo: 'head' as const,

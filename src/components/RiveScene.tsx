@@ -7,6 +7,7 @@ import { RIVE_SRC, RIVE_STATE_MACHINE } from '../config';
 import type { SceneArtboard } from '../lib/artboard';
 import { afterFrames } from '../lib/frames';
 import { PHASE_TIME_VALUE, isLampOnPhase, type Phase } from '../lib/phase';
+import { INITIAL_WALKER, isSettled, stepWalker, type WalkerState } from '../lib/walker';
 
 // Self-host the runtime (the default would fetch it from unpkg) and start compiling it before mount.
 RuntimeLoader.setWasmUrl(wasmUrl);
@@ -27,6 +28,8 @@ export type RiveSceneProps = {
   phase: Phase;
   paused: boolean;
   onLoadError: () => void;
+  /** Where the reader is along the world, in stops. Omitted, the world stays on the hero. */
+  readProgress?: () => number;
 };
 
 /** Returns false when the view model didn't bind, which makes every write a silent no-op. */
@@ -41,7 +44,7 @@ function fireLamp(rive: Rive, trigger: 'lampOn' | 'lampOff') {
   rive.viewModelInstance?.trigger(trigger)?.trigger();
 }
 
-export function RiveScene({ artboard, phase, paused, onLoadError }: RiveSceneProps) {
+export function RiveScene({ artboard, phase, paused, onLoadError, readProgress }: RiveSceneProps) {
   const [ready, setReady] = useState(false);
   const phaseRef = useRef(phase);
   const pausedRef = useRef(paused);
@@ -122,6 +125,77 @@ export function RiveScene({ artboard, phase, paused, onLoadError }: RiveScenePro
     }, PHASE_BLEND_MS);
     return () => window.clearTimeout(timer);
   }, [rive, ready, phase]);
+
+  // The penguin walks the reader through the world: each frame the world advances toward the
+  // scroll position at walking pace (lib/walker.ts) and the pose and facing follow it. Under
+  // reduced motion there is no walk: the world snaps to the nearest stop with the penguin facing
+  // the viewer, and the paused machine is run for two frames so the snap actually draws.
+  useEffect(() => {
+    if (!rive || !ready || !readProgress) return;
+    const viewModel = rive.viewModelInstance;
+    const scroll = viewModel?.number('scroll');
+    if (!scroll) {
+      console.warn('[ewenn] The Rive file has no "scroll" number; the world will not follow the page.');
+      return;
+    }
+    const pose = viewModel?.number('walkPose');
+    const facing = viewModel?.number('walkFacing');
+
+    // Arriving mid-page (a reload, a fragment link) puts the world there without a walk.
+    const start = pausedRef.current ? Math.round(readProgress()) : readProgress();
+    let state: WalkerState = stepWalker({ ...INITIAL_WALKER, shown: start }, start, 0, 0);
+    let frame = 0;
+    let last = 0;
+    let cancelRedraw: () => void = () => undefined;
+
+    const write = () => {
+      scroll.value = state.shown;
+      if (pose) pose.value = state.pose;
+      if (facing) facing.value = state.facing;
+      if (!pausedRef.current) return;
+      cancelRedraw();
+      rive.play();
+      cancelRedraw = afterFrames(2, () => {
+        if (pausedRef.current) rive.pause();
+      });
+    };
+
+    const tick = () => {
+      frame = 0;
+      const target = readProgress();
+      if (pausedRef.current) {
+        const stop = Math.round(target);
+        if (stop === state.shown) return;
+        state = { ...INITIAL_WALKER, shown: stop };
+        write();
+        return;
+      }
+      const now = performance.now();
+      // Capped so a tab coming back from the background does not teleport the world.
+      const dt = last ? Math.min((now - last) / 1000, 0.25) : 1 / 60;
+      last = now;
+      state = stepWalker(state, target, now, dt);
+      write();
+      if (isSettled(state, target)) {
+        last = 0;
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    const wake = () => {
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+
+    write();
+    window.addEventListener('scroll', wake, { passive: true });
+    window.addEventListener('resize', wake);
+    return () => {
+      window.removeEventListener('scroll', wake);
+      window.removeEventListener('resize', wake);
+      cancelAnimationFrame(frame);
+      cancelRedraw();
+    };
+  }, [rive, ready, readProgress]);
 
   return (
     <div className={ready ? 'scene is-ready' : 'scene'} aria-hidden="true">

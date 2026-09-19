@@ -287,6 +287,133 @@ html[data-page='doc'] body {
   filter: none;
 }
 
+/* ---------------------------------------------------------------- scrolling world */
+
+/*
+ * The home page is a column of full-height screens — the hero, then one per stop — over the
+ * fixed canvas. Scrolling through them is what slides the Rive world (see readProgress in
+ * HomePage.tsx), so each screen is exactly one viewport tall: a taller one would stall the
+ * world between stops, a shorter one would rush it.
+ *
+ * The header comes out of flow so the hero screen can be a full viewport on its own, and the
+ * screens carry the top inset it used to push the hero down by.
+ */
+.page--home .overlay {
+  display: block;
+  min-height: 0;
+  padding: 0;
+}
+
+/* Fixed, not absolute: the brand stays put on every stop instead of scrolling away with the hero.
+   It inherits the overlay's pointer-events: none, so only the link itself is clickable and the
+   full-width bar never swallows taps meant for the scene underneath. */
+.page--home .site-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    0
+    max(20px, env(safe-area-inset-left));
+}
+
+.page--home .overlay__main {
+  display: block;
+  padding-top: 0;
+}
+
+.screen {
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  /* Header inset + the 48px brand row + the gap the hero always had above it. */
+  padding:
+    calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px))
+    max(20px, env(safe-area-inset-right))
+    0
+    max(20px, env(safe-area-inset-left));
+}
+
+/* Same voice as the hero, one step down: these are chapters of it, not rivals to it. */
+.stop__copy {
+  width: min(720px, 100%);
+  text-align: center;
+}
+
+.stop__title {
+  margin: 0;
+  font-size: calc(var(--type-display) * 0.78);
+  font-weight: var(--weight-semibold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.stop__body {
+  margin: 14px auto 0;
+  max-width: 46ch;
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/*
+ * Copy scrolls with the page, so on its way up a stop's heading would pass straight over the
+ * penguin. Each block is only visible near where it comes to rest: a stop's copy fades in over
+ * the last stretch of its approach, the hero's fades out as it leaves. Scroll-driven, so it
+ * tracks the scroll exactly and costs no script; where unsupported the copy simply stays opaque.
+ */
+@supports (animation-timeline: view()) {
+  .stop__copy {
+    animation: copy-arrive linear both;
+    animation-timeline: view();
+    animation-range: cover 40% cover 68%;
+  }
+
+  .screen--hero .hero {
+    animation: copy-leave linear both;
+    animation-timeline: view();
+    animation-range: cover 72% cover 88%;
+  }
+}
+
+@keyframes copy-arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes copy-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Pinned to the foot of the viewport on every screen, the hero included, so Privacy, Terms and
+   Support are always one tap away. Centred with auto margins rather than a translate: the entrance
+   animation owns `transform` and would undo it. */
+.page--home .site-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 2;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+/* On a phone the pinned header sits right above the stop copy; give it room to breathe. */
+@media (max-width: 767px) {
+  .screen--stop {
+    padding-top: calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px) + 48px);
+  }
+}
+
 /* ---------------------------------------------------------------- footer */
 
 .site-footer {

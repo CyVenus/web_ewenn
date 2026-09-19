@@ -206,3 +206,80 @@ describe('RiveScene phase changes', () => {
     expect(fired).toEqual([]);
   });
 });
+
+describe('RiveScene scroll', () => {
+  let progress: number;
+
+  async function renderWithProgress(paused = false) {
+    const { RiveScene } = await import('./RiveScene');
+    render(
+      <RiveScene
+        artboard="site-desktop"
+        phase="day"
+        paused={paused}
+        onLoadError={vi.fn()}
+        readProgress={() => progress}
+      />,
+    );
+    act(() => capturedOnReady?.(riveInstance));
+  }
+
+  beforeEach(() => {
+    numberProps.scroll = { value: -1 };
+    numberProps.walkPose = { value: -1 };
+    numberProps.walkFacing = { value: -1 };
+    progress = 0.75;
+  });
+
+  it("puts the world at the reader's progress as soon as the scene is ready, without a walk", async () => {
+    await renderWithProgress();
+    expect(numberProps.scroll.value).toBe(-1);
+    act(() => flushFrames(2));
+    expect(numberProps.scroll.value).toBe(0.75);
+    expect(numberProps.walkPose.value).toBe(1);
+  });
+
+  it('walks toward the page on scroll, scheduling at most one frame per burst', async () => {
+    await renderWithProgress();
+    act(() => flushFrames(2));
+    const queued = frameQueue.length;
+    progress = 1.2;
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(frameQueue.length).toBe(queued + 1);
+    act(() => flushFrames(frameQueue.length));
+    expect(numberProps.walkPose.value).toBe(2);
+    expect(numberProps.walkFacing.value).toBe(0);
+    expect(numberProps.scroll.value).toBeGreaterThan(0.75);
+    expect(numberProps.scroll.value).toBeLessThan(1.2);
+  });
+
+  it('faces the viewer when the page is already sitting on a stop', async () => {
+    progress = 1;
+    await renderWithProgress();
+    act(() => flushFrames(2));
+    expect(numberProps.scroll.value).toBe(1);
+    expect(numberProps.walkPose.value).toBe(0);
+  });
+
+  it('snaps to the nearest stop under reduced motion, and runs the paused machine to draw it', async () => {
+    progress = 0.6;
+    await renderWithProgress(true);
+    act(() => flushFrames(2));
+    act(() => vi.advanceTimersByTime(700));
+    (riveInstance.play as ReturnType<typeof vi.fn>).mockClear();
+    act(() => flushFrames(2));
+    expect(numberProps.scroll.value).toBe(1);
+    expect(riveInstance.play).toHaveBeenCalled();
+  });
+
+  it('warns, and leaves the page alone, when the file has no scroll number', async () => {
+    delete numberProps.scroll;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await renderWithProgress();
+    act(() => flushFrames(2));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"scroll"'));
+  });
+});

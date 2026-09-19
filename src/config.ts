@@ -39,6 +39,19 @@ function splitAtHyphenatedPhrase(headline: string): { lead: string; phrase: stri
 
 export const HEADLINE = splitAtHyphenatedPhrase(COPY.headline);
 
+/**
+ * One entry per stop in the Rive world, in scroll order after the hero. The scene is built with
+ * a stop every 1920 units along `world`, so this list and the file must grow together — a stop
+ * here with no scenery behind it scrolls onto empty snow.
+ */
+export const STOPS = [
+  {
+    id: 'goals',
+    title: 'Set a goal. Get gentle steps.',
+    body: 'Tell Ewenn what you want to work on and it suggests small, doable steps. Tick them off one day at a time.',
+  },
+] as const;
+
 export const RIVE_SRC = '/rive/ewenn-scene.riv';
 export const RIVE_STATE_MACHINE = 'State Machine 1';
 export const DESKTOP_ARTBOARD = 'site-desktop';

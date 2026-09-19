@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DOC_ROUTES } from './routes';
-import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules } from './warmup';
+import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules, fontPreloadWeights } from './warmup';
 
 describe('buildFontPreloads', () => {
   it('asks for each file as a CORS font, so the stylesheet reuses the entry', () => {
@@ -77,6 +77,20 @@ describe('buildSpeculationRules', () => {
   it('is valid JSON for every page the site builds', () => {
     for (const path of ['/', ...docPaths]) {
       expect(() => JSON.parse(buildSpeculationRules(path))).not.toThrow();
+    }
+  });
+});
+
+describe('fontPreloadWeights', () => {
+  /* Chrome reports a preload no request claims within a few seconds of load. The home page never
+     sets 500 and draws its text after load, so preloading there only produced those warnings. */
+  it('preloads nothing on the home page', () => {
+    expect(fontPreloadWeights('/')).toEqual([]);
+  });
+
+  it('preloads every weight on each document, where all three are set', () => {
+    for (const name of DOC_ROUTES) {
+      expect(fontPreloadWeights(`/${name}/`)).toEqual(FONT_WEIGHTS);
     }
   });
 });

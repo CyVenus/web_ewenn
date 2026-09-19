@@ -15,6 +15,21 @@ import { DOC_ROUTES } from './routes.ts';
 export const FONT_WEIGHTS = [400, 500, 600] as const;
 
 /**
+ * Which weights a page preloads. The documents, and only the documents.
+ *
+ * Preloading is what stops the documents repainting in Fredoka after first showing the fallback,
+ * and all three of them set text in all three weights. The home page is different on both
+ * counts: it never sets 500 at all, and the text it does set is drawn by React after the load
+ * event, sometimes well after -- a tab opened in the background does not render until it is
+ * shown. Chrome flags any preload that no request claims within a few seconds of load, so on the
+ * home page all three preloads were reported as wasted. Its stylesheet sits in the head and asks
+ * for the two weights it uses long before the hero paints, which is all a preload would buy.
+ */
+export function fontPreloadWeights(path: string): readonly number[] {
+  return path === '/' ? [] : FONT_WEIGHTS;
+}
+
+/**
  * `crossorigin` is not optional and not cosmetic: fonts are fetched in CORS mode, so a preload
  * without it warms a cache entry the stylesheet then cannot use and the file is fetched twice.
  */
