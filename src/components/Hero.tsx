@@ -1,5 +1,6 @@
 import { COPY, HEADLINE } from '../config';
 import { AppStoreBadge } from './AppStoreBadge';
+import { BlurText } from './BlurText';
 
 /**
  * The one block of copy on the site. It carries its own light rather than sitting on a panel —
@@ -10,8 +11,13 @@ export function Hero() {
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero__card">
         <h1 id="hero-title" className="hero__title">
-          {HEADLINE.lead}
-          <span className="hero__title-phrase">{HEADLINE.phrase}</span>
+          <BlurText
+            text={COPY.headline}
+            phrase={HEADLINE.phrase}
+            phraseClassName="hero__title-phrase"
+            delay={100}
+            stepDuration={85}
+          />
         </h1>
         <p className="hero__subline">{COPY.subline}</p>
         <AppStoreBadge />

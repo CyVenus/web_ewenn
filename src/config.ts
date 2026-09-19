@@ -1,6 +1,7 @@
-// PLACEHOLDER: the numeric App Store ID, e.g. '1234567890'. Empty means the app is not listed
-// yet: Apple's badge still renders, but as an image rather than a link, and no Smart App Banner
-// tag is emitted. Filling this in is the only edit launch needs.
+/**
+ * Optional numeric App Store ID, e.g. '1234567890'.
+ * When set, it activates the Smart App Banner meta tag and routes APP_STORE_URL to the direct app page.
+ */
 export const APP_STORE_ID = '';
 
 /**
@@ -11,7 +12,13 @@ export const isLiveAppStoreId = (id: string): boolean => /^\d+$/.test(id);
 
 export const APP_STORE_LIVE = isLiveAppStoreId(APP_STORE_ID);
 
-export const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
+/**
+ * App Store URL opened when the provider badge is clicked.
+ * Currently points to the generic App Store link; update to the direct app link once available.
+ */
+export const APP_STORE_URL = APP_STORE_ID
+  ? `https://apps.apple.com/app/id${APP_STORE_ID}`
+  : 'https://apps.apple.com/in/iphone/apps';
 
 /** The public origin. Feeds each page's canonical and og:url, and the absolute share-image URL. */
 export const SITE_URL = 'https://ewenn.app';

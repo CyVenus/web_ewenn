@@ -20,6 +20,7 @@ npm run dev          # http://localhost:5173
 |---|---|
 | `npm run dev` | Dev server |
 | `npm run build` | Typecheck, then build to `dist/` |
+| `npm run clean` | Removes build artifacts and test screenshots (`dist/`, `screenshots/`) |
 | `npm run preview` | Serve the built `dist/` |
 | `npm test` | Unit and component tests (vitest + jsdom) |
 | `npm run typecheck` | `tsc -b` |
@@ -47,19 +48,12 @@ zoom is expected, and the audit budgets it rather than banning it.
 
 ## Before launch — one edit
 
-`APP_STORE_ID` in `src/config.ts` is empty. That single constant gates everything:
+`APP_STORE_ID` / `APP_STORE_URL` in `src/config.ts`:
 
-- **Empty** — Apple's badge renders as an image with no link, and no Smart App Banner tag is
-  emitted. There is nowhere legitimate to send anyone until the app is listed, and a dead
-  download link is worse than a patient one.
-- **A numeric ID** — the badge becomes a real link to `apps.apple.com/app/id<ID>`, and
-  `src/lib/headTags.ts` emits the matching `apple-itunes-app` banner from the same constant, so
-  the two can never disagree.
+- The provider badge opens `APP_STORE_URL` (currently defaulting to `https://apps.apple.com/in/iphone/apps`) in a new tab.
+- Once listed, setting a numeric `APP_STORE_ID` automatically routes the link to `apps.apple.com/app/id<ID>` and emits the matching `apple-itunes-app` Smart App Banner in `src/lib/headTags.ts`. Alternatively, `APP_STORE_URL` can be updated directly to your app's custom link.
 
 Set it and rebuild. Nothing else changes.
-
-> Apple's Marketing Resources terms expect the badge to link to the app's product page. Showing
-> it unlinked pre-launch is a deliberate interim state, not the finished article.
 
 ## How the day/night cycle works
 

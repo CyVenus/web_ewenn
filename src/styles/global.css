@@ -262,16 +262,18 @@ html[data-page='doc'] body {
   line-height: 0;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  transition: none;
 }
 
 .store-badge__img {
   height: 68px;
   width: auto;
   display: block;
+  cursor: pointer;
+  transition: none;
 }
 
 /*
- * Pre-launch, the badge is an image rather than a link (see AppStoreBadge.tsx).
  * Cursor is pointer on hover, matching the interactive download button affordance.
  */
 .store-badge--pending {
@@ -282,9 +284,10 @@ html[data-page='doc'] body {
 .store-badge:focus-visible,
 .store-badge:active,
 .store-badge__img:hover {
+  cursor: pointer;
   transform: none;
-  animation: none;
   filter: none;
+  transition: none;
 }
 
 /* ---------------------------------------------------------------- footer */
@@ -890,20 +893,71 @@ html[data-page='doc'] body {
  * every element is in the DOM at first paint, because Chrome timestamps LCP at paint time.
  */
 .enter,
-.hero__card > * {
+.hero__subline,
+.store-badge {
   animation: enter 400ms ease-out both;
 }
 
-.hero__card > :nth-child(1) {
-  animation-delay: 120ms;
+.hero__subline {
+  animation-delay: 380ms;
 }
 
-.hero__card > :nth-child(2) {
-  animation-delay: 190ms;
+.store-badge {
+  animation-delay: 500ms;
 }
 
-.hero__card > :nth-child(3) {
-  animation-delay: 260ms;
+/* ---------------------------------------------------------------- hero text animation (react bits blur-text) */
+
+.blur-text {
+  display: inline;
+}
+
+.blur-text-token {
+  display: inline;
+}
+
+.blur-text-word {
+  display: inline-block;
+  will-change: transform, filter, opacity;
+  animation: blur-text-enter 580ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.blur-text-word--top {
+  animation-name: blur-text-enter-top;
+}
+
+@keyframes blur-text-enter {
+  0% {
+    opacity: 0.01;
+    filter: blur(14px);
+    transform: translateY(16px) scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes blur-text-enter-top {
+  0% {
+    opacity: 0.01;
+    filter: blur(14px);
+    transform: translateY(-16px) scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Starts at 0.01, not 0: Chrome ignores text painted at opacity 0 for FCP/LCP, which left the
@@ -1127,8 +1181,12 @@ html[data-page='doc'] body {
    * would hand every reduced-motion visitor a blank page.
    */
   .enter,
-  .hero__card > * {
-    animation: none;
+  .hero__card > *,
+  .blur-text-word {
+    animation: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   .scene,

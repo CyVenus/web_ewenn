@@ -109,7 +109,7 @@ export const SUPPORT_DOC: Doc = {
       <p>
         Purchases are handled by Apple, and refunds are Apple's to give — we cannot issue one
         ourselves. Request one at{' '}
-        <a href="https://reportaproblem.apple.com" rel="noreferrer">
+        <a href="https://reportaproblem.apple.com" target="_blank" rel="noopener noreferrer">
           reportaproblem.apple.com
         </a>
         , or through <strong>Settings → your name → Media &amp; Purchases → View Account →
