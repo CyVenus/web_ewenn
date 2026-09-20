@@ -18,17 +18,20 @@ export const SITE_URL = 'https://ewenn.app';
 
 export const COPY = {
   name: 'Ewenn',
-  headline: 'Your new self-care partner.',
-  subline: 'Set goals, build gentle AI routines and make daily progress with the penguin by your side.',
+  headline: 'Small steps, gently done.',
+  subline: "Set a goal and Ewenn's AI turns it into small daily steps. Take them on with a friend.",
 } as const;
 
 /**
- * `text-wrap: balance` breaks the headline at the hyphen — "Your new self-" / "care partner." —
- * because that split has the shorter longest line, so balance actively prefers it. A max-width
- * cannot fix it either: "Your new self-" is narrower than "self-care partner.", so any box that
- * fits the line we want also fits the break we don't. Marking the hyphenated phrase unbreakable
- * in the markup is the one fix that leaves COPY.headline byte-identical on the page and in the
- * clipboard.
+ * A guard on the headline, dormant while the current one has no hyphen in it.
+ *
+ * `text-wrap: balance` will break a headline at a hyphen — "Your new self-" / "care partner." —
+ * whenever that split has the shorter longest line, so balance actively prefers it. A max-width
+ * cannot fix it either: the half before the hyphen is narrower than the whole phrase, so any box
+ * that fits the line we want also fits the break we don't. Marking the hyphenated phrase
+ * unbreakable in the markup is the one fix that leaves COPY.headline byte-identical on the page
+ * and in the clipboard. With no hyphen to protect, the whole headline goes in the span, which is
+ * an inline-block and so wraps exactly as the bare text would.
  */
 function splitAtHyphenatedPhrase(headline: string): { lead: string; phrase: string } {
   const words = headline.split(' ');
@@ -49,6 +52,11 @@ export const STOPS = [
     id: 'goals',
     title: 'Set a goal. Get gentle steps.',
     body: 'Tell Ewenn what you want to work on and it suggests small, doable steps. Tick them off one day at a time.',
+  },
+  {
+    id: 'friends',
+    title: 'Better with a friend.',
+    body: 'Take on a challenge together, see how each other is doing, and cheer them on when the day gets hard.',
   },
 ] as const;
 

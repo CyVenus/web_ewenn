@@ -30,6 +30,8 @@ export type RiveSceneProps = {
   onLoadError: () => void;
   /** Where the reader is along the world, in stops. Omitted, the world stays on the hero. */
   readProgress?: () => number;
+  /** Where the penguin has actually walked to, in stops, reported on every frame it moves. */
+  onWalk?: (shown: number) => void;
 };
 
 /** Returns false when the view model didn't bind, which makes every write a silent no-op. */
@@ -44,11 +46,12 @@ function fireLamp(rive: Rive, trigger: 'lampOn' | 'lampOff') {
   rive.viewModelInstance?.trigger(trigger)?.trigger();
 }
 
-export function RiveScene({ artboard, phase, paused, onLoadError, readProgress }: RiveSceneProps) {
+export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, onWalk }: RiveSceneProps) {
   const [ready, setReady] = useState(false);
   const phaseRef = useRef(phase);
   const pausedRef = useRef(paused);
   const onLoadErrorRef = useRef(onLoadError);
+  const onWalkRef = useRef(onWalk);
   const appliedPhaseRef = useRef<Phase | null>(null);
   const cancelStartupRef = useRef<() => void>(() => undefined);
   const warnedUnboundRef = useRef(false);
@@ -57,6 +60,7 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress }
     phaseRef.current = phase;
     pausedRef.current = paused;
     onLoadErrorRef.current = onLoadError;
+    onWalkRef.current = onWalk;
   });
 
   useEffect(() => () => cancelStartupRef.current(), []);
@@ -152,6 +156,7 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress }
       scroll.value = state.shown;
       if (pose) pose.value = state.pose;
       if (facing) facing.value = state.facing;
+      onWalkRef.current?.(state.shown);
       if (!pausedRef.current) return;
       cancelRedraw();
       rive.play();

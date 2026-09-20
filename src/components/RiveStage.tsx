@@ -10,9 +10,10 @@ export type RiveStageProps = {
   paused: boolean;
   onFailed: () => void;
   readProgress?: () => number;
+  onWalk?: (shown: number) => void;
 };
 
-export function RiveStage({ artboard, phase, paused, onFailed, readProgress }: RiveStageProps) {
+export function RiveStage({ artboard, phase, paused, onFailed, readProgress, onWalk }: RiveStageProps) {
   const [mobileFailed, setMobileFailed] = useState(false);
   const effectiveArtboard: SceneArtboard = mobileFailed ? DESKTOP_ARTBOARD : artboard;
 
@@ -34,6 +35,7 @@ export function RiveStage({ artboard, phase, paused, onFailed, readProgress }: R
       paused={paused}
       onLoadError={handleLoadError}
       readProgress={readProgress}
+      onWalk={onWalk}
     />
   );
 }

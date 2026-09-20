@@ -365,21 +365,34 @@ html[data-page='doc'] body {
 /*
  * Copy scrolls with the page, so on its way up a stop's heading would pass straight over the
  * penguin. Each block is only visible near where it comes to rest: a stop's copy fades in over
- * the last stretch of its approach, the hero's fades out as it leaves. Scroll-driven, so it
- * tracks the scroll exactly and costs no script; where unsupported the copy simply stays opaque.
+ * the last stretch of its approach, the hero's fades out as it leaves.
+ *
+ * This is the fallback. Scroll position is the wrong clock for it — the page jumps a whole screen
+ * the instant a gesture lands, while the penguin needs a couple of seconds to walk there, so two
+ * quick flicks put a stop's words on screen over the previous stop's scenery. Once the scene is
+ * running, `page--walk-copy` hands the fade to HomePage, which keys it to the walk itself
+ * (lib/copyReveal.ts). This rule covers the gap before the first frame, and the case where the
+ * scene never loads at all and there is no walk to key to.
  */
 @supports (animation-timeline: view()) {
-  .stop__copy {
+  .page--home:not(.page--walk-copy) .stop__copy {
     animation: copy-arrive linear both;
     animation-timeline: view();
     animation-range: cover 40% cover 68%;
   }
 
-  .screen--hero .hero {
+  .page--home:not(.page--walk-copy) .screen--hero .hero {
     animation: copy-leave linear both;
     animation-timeline: view();
     animation-range: cover 72% cover 88%;
   }
+}
+
+/* The walk-driven fade writes `opacity` on the block itself; this keeps it from snapping between
+   the frames of a slow walk, and from flashing when the scene hands over on the first frame. */
+.page--walk-copy .screen--hero,
+.page--walk-copy .stop__copy {
+  transition: opacity 120ms linear;
 }
 
 @keyframes copy-arrive {

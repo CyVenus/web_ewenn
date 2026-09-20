@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { COPY } from '../config';
+import { COPY, HEADLINE } from '../config';
 import { Hero } from './Hero';
 import { SiteFooter } from './SiteFooter';
 import { SiteHeader } from './SiteHeader';
@@ -8,22 +8,13 @@ import { SiteHeader } from './SiteHeader';
 describe('Hero copy', () => {
   it('renders the headline verbatim, as one continuous string', () => {
     render(<Hero />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Your new self-care partner.');
+    // Split across a span for the wrap; the reader and the clipboard must still see it whole.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(COPY.headline);
   });
 
   it('renders the subline verbatim', () => {
     render(<Hero />);
-    expect(
-      screen.getByText(
-        'Set goals, build gentle AI routines and make daily progress with the penguin by your side.',
-      ),
-    ).toBeInTheDocument();
-  });
-
-  /** The reference design says "routines"; "routes" was the previous wording and is a regression. */
-  it('says "routines", not "routes"', () => {
-    expect(COPY.subline).toContain('gentle AI routines');
-    expect(COPY.subline).not.toContain('gentle AI routes');
+    expect(screen.getByText(COPY.subline)).toBeInTheDocument();
   });
 
   it('has exactly one h1', () => {
@@ -32,14 +23,16 @@ describe('Hero copy', () => {
   });
 
   /**
-   * The hyphenated phrase is wrapped so a wrap can never split "self-care" across lines. It is
-   * markup, not styling, so it survives a CSS regression.
+   * The tail of the headline is wrapped so a wrap can never split a hyphenated word across lines
+   * (see config.ts). It is markup, not styling, so it survives a CSS regression — and whatever
+   * the headline says, the two halves must still reconstruct it exactly.
    */
-  it('keeps the hyphenated phrase in one unbreakable span', () => {
+  it('keeps the protected phrase in its own span', () => {
     const { container } = render(<Hero />);
     const phrase = container.querySelector('.hero__title-phrase');
     expect(phrase).toBeInTheDocument();
-    expect(phrase).toHaveTextContent('self-care partner.');
+    expect(phrase).toHaveTextContent(HEADLINE.phrase);
+    expect(HEADLINE.lead + HEADLINE.phrase).toBe(COPY.headline);
   });
 
   it('labels the hero section by its own heading', () => {
