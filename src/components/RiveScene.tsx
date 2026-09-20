@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RIVE_SRC, RIVE_STATE_MACHINE } from '../config';
 import type { SceneArtboard } from '../lib/artboard';
 import { afterFrames } from '../lib/frames';
+import { greet, isAtGreetStop } from '../lib/greeting';
 import { PHASE_TIME_VALUE, isLampOnPhase, type Phase } from '../lib/phase';
 import { INITIAL_WALKER, isSettled, stepWalker, type WalkerState } from '../lib/walker';
 
@@ -144,6 +145,13 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     }
     const pose = viewModel?.number('walkPose');
     const facing = viewModel?.number('walkFacing');
+    // The penguins greet each other when the walker reaches them, once per arrival: `write` runs
+    // on every frame the reader stands there, and a flipper raised every frame is a seizure, not
+    // a greeting. Skipped under reduced motion, where the machine is paused two frames at a time
+    // and the wave would freeze half-raised.
+    let greeted = false;
+    let cancelGreeting: () => void = () => undefined;
+    const fireGreeting = (trigger: string) => viewModel?.trigger(trigger)?.trigger();
 
     // Arriving mid-page (a reload, a fragment link) puts the world there without a walk.
     const start = pausedRef.current ? Math.round(readProgress()) : readProgress();
@@ -157,6 +165,15 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
       if (pose) pose.value = state.pose;
       if (facing) facing.value = state.facing;
       onWalkRef.current?.(state.shown);
+      if (!pausedRef.current && isAtGreetStop(state.shown)) {
+        if (!greeted) {
+          greeted = true;
+          cancelGreeting = greet(fireGreeting);
+        }
+      } else if (greeted) {
+        greeted = false;
+        cancelGreeting();
+      }
       if (!pausedRef.current) return;
       cancelRedraw();
       rive.play();
@@ -199,6 +216,7 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
       window.removeEventListener('resize', wake);
       cancelAnimationFrame(frame);
       cancelRedraw();
+      cancelGreeting();
     };
   }, [rive, ready, readProgress]);
 
