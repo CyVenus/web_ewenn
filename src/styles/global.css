@@ -15,6 +15,21 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * The home page is three screens of scenery with a fixed canvas behind them; a scrollbar down the
+ * side of it is the one piece of chrome in an otherwise edge-to-edge picture. Hidden there only —
+ * the document pages are long reading and the bar is a real affordance on them, so `:has` scopes
+ * this to the page that wants it. Scrolling itself is untouched: wheel, touch, keys and the scroll
+ * range all behave exactly as before, and a browser without `:has` simply keeps its scrollbar.
+ */
+html:has(.page--home) {
+  scrollbar-width: none;
+}
+
+html:has(.page--home)::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   margin: 0;
   min-height: 100%;
@@ -324,17 +339,16 @@ html[data-page='doc'] body {
 }
 
 .screen {
+  /* Header inset + the 48px brand row + the gap the hero always had above it. Named because the
+     pinned copy below has to land on exactly this line: if the two ever disagree, the words jump
+     the moment the scene takes the fade over. */
+  --copy-top: calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px));
   height: 100vh;
   height: 100svh;
   display: grid;
   justify-items: center;
   align-content: start;
-  /* Header inset + the 48px brand row + the gap the hero always had above it. */
-  padding:
-    calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px))
-    max(20px, env(safe-area-inset-right))
-    0
-    max(20px, env(safe-area-inset-left));
+  padding: var(--copy-top) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
 }
 
 /* Same voice as the hero, one step down: these are chapters of it, not rivals to it. */
@@ -388,11 +402,43 @@ html[data-page='doc'] body {
   }
 }
 
-/* The walk-driven fade writes `opacity` on the block itself; this keeps it from snapping between
-   the frames of a slow walk, and from flashing when the scene hands over on the first frame. */
-.page--walk-copy .screen--hero,
-.page--walk-copy .stop__copy {
+/*
+ * Once the walk drives the fade, the copy is pinned to the viewport instead of scrolling with its
+ * screen.
+ *
+ * The page jumps a whole screen the instant a gesture lands, but the fade is keyed to the penguin,
+ * which takes seconds to walk there. In flow that meant the outgoing block was still fully opaque
+ * while its screen slid past — going back from the friends stop, "Better with a friend." rode all
+ * the way down the viewport and off the bottom. Pinned, nothing travels: the scroll only decides
+ * which block is fading up and which is fading down, so leaving looks like arriving in reverse.
+ *
+ * The screens keep their height and their padding, so the scroll range is untouched; only the copy
+ * comes out of the flow. Blocks that are not showing are stacked invisibly on the one that is,
+ * which is why HomePage takes their pointer events away as it fades them out.
+ */
+.page--walk-copy .stop__copy,
+.page--walk-copy .screen--hero > .screen__pin {
+  position: fixed;
+  top: var(--copy-top);
+  /* Centred from the middle rather than held by both edges: a fixed box resolves percentages
+     against the viewport, not against the inset it was given, so `width: …100%` with left and
+     right set overflows the gutters by exactly the gutters. `translate` and not `transform`,
+     which the hero's entrance animation already owns. */
+  left: 50%;
+  translate: -50% 0;
+  /* Keeps it from snapping between the frames of a slow walk, and from flashing when the scene
+     hands the fade over on its first frame. */
   transition: opacity 120ms linear;
+}
+
+.page--walk-copy .stop__copy {
+  width: min(720px, calc(100% - max(20px, env(safe-area-inset-left)) - max(20px, env(safe-area-inset-right))));
+}
+
+.page--walk-copy .screen--hero > .screen__pin {
+  display: grid;
+  justify-items: center;
+  width: min(820px, calc(100% - max(20px, env(safe-area-inset-left)) - max(20px, env(safe-area-inset-right))));
 }
 
 @keyframes copy-arrive {
@@ -420,10 +466,11 @@ html[data-page='doc'] body {
   margin: 0 auto;
 }
 
-/* On a phone the pinned header sits right above the stop copy; give it room to breathe. */
+/* On a phone the pinned header sits right above the stop copy; give it room to breathe. Moving
+   the variable rather than the padding keeps the pinned copy on the same line as the in-flow one. */
 @media (max-width: 767px) {
   .screen--stop {
-    padding-top: calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px) + 48px);
+    --copy-top: calc(max(16px, env(safe-area-inset-top)) + 48px + clamp(20px, 7.5vh, 104px) + 48px);
   }
 }
 

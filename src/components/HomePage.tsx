@@ -50,7 +50,12 @@ export function HomePage() {
       setWalkDriven(true);
     }
     copyRefs.current.forEach((node, index) => {
-      if (node) node.style.opacity = String(copyOpacity(shown, index));
+      if (!node) return;
+      const opacity = copyOpacity(shown, index);
+      node.style.opacity = String(opacity);
+      // Pinned, the blocks sit on top of one another, so an invisible hero would still be catching
+      // the taps meant for the stop underneath it — the App Store badge most of all.
+      node.style.pointerEvents = opacity === 0 ? 'none' : '';
     });
   }, []);
 
@@ -65,7 +70,9 @@ export function HomePage() {
   useEffect(() => {
     if (!sceneFailed) return;
     copyRefs.current.forEach((node) => {
-      if (node) node.style.removeProperty('opacity');
+      if (!node) return;
+      node.style.removeProperty('opacity');
+      node.style.removeProperty('pointer-events');
     });
   }, [sceneFailed]);
 
@@ -88,14 +95,17 @@ export function HomePage() {
       <div className="overlay">
         <SiteHeader />
         <main className="overlay__main">
-          <div
-            className="screen screen--hero"
-            data-screen="hero"
-            ref={(node) => {
-              copyRefs.current[0] = node;
-            }}
-          >
-            <Hero />
+          <div className="screen screen--hero" data-screen="hero">
+            {/* The fade and the pinning both belong on this wrapper rather than on the screen:
+                a pinned screen would leave the flow and take a third of the scroll range with it. */}
+            <div
+              className="screen__pin"
+              ref={(node) => {
+                copyRefs.current[0] = node;
+              }}
+            >
+              <Hero />
+            </div>
           </div>
           {STOPS.map((stop, index) => (
             <section
