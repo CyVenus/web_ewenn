@@ -209,6 +209,9 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     };
 
     write();
+    // Landing on the friends stop directly -- a reload, a deep link -- settles the walker there
+    // without ever running the loop, so the greeting would never get a frame to start on.
+    if (!pausedRef.current && isAtGreetStop(state.shown)) wake();
     window.addEventListener('scroll', wake, { passive: true });
     window.addEventListener('resize', wake);
     return () => {
