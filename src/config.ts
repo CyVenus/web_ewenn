@@ -18,7 +18,7 @@ export const SITE_URL = 'https://ewenn.app';
 
 export const COPY = {
   name: 'Ewenn',
-  headline: 'Small steps, gently done.',
+  headline: 'Your little goal buddy.',
   subline: "Set a goal and Ewenn's AI turns it into small daily steps. Take them on with a friend.",
 } as const;
 
