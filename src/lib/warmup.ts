@@ -15,6 +15,21 @@ import { DOC_ROUTES } from './routes.ts';
 export const FONT_WEIGHTS = [400, 500, 600] as const;
 
 /**
+ * Which weights a page preloads. The documents, and only the documents.
+ *
+ * Preloading is what stops the documents repainting in Fredoka after first showing the fallback,
+ * and all three of them set text in all three weights. The home page is different on both
+ * counts: it never sets 500 at all, and the text it does set is drawn by React after the load
+ * event, sometimes well after -- a tab opened in the background does not render until it is
+ * shown. Chrome flags any preload that no request claims within a few seconds of load, so on the
+ * home page all three preloads were reported as wasted. Its stylesheet sits in the head and asks
+ * for the two weights it uses long before the hero paints, which is all a preload would buy.
+ */
+export function fontPreloadWeights(path: string): readonly number[] {
+  return path === '/' ? [] : FONT_WEIGHTS;
+}
+
+/**
  * `crossorigin` is not optional and not cosmetic: fonts are fetched in CORS mode, so a preload
  * without it warms a cache entry the stylesheet then cannot use and the file is fetched twice.
  */
@@ -23,6 +38,26 @@ export function buildFontPreloads(hrefs: readonly string[]): HeadTag[] {
     tag: 'link' as const,
     attrs: { rel: 'preload', href, as: 'font', type: 'font/woff2', crossorigin: '' },
   }));
+}
+
+/**
+ * The Rive runtime's Wasm, preloaded on the home page only.
+ *
+ * It is the largest thing the page downloads — 2.1MB, about 0.9MB compressed — and without this
+ * it is discovered last: the runtime asks for it only once the page script has downloaded and
+ * run, so the two arrive one after the other. Announced in the head, they download side by side.
+ * The scene file is already preloaded in index.html for the same reason; the Wasm could not be,
+ * because its name carries a content hash that only the build knows.
+ *
+ * `as: fetch` with `crossorigin`, because the runtime fetches it in CORS mode with same-origin
+ * credentials; any other pairing warms an entry the runtime cannot reuse, and the file downloads
+ * twice. The documents never start the runtime, so they are not given it.
+ */
+export function buildWasmPreload(href: string | null, path: string): HeadTag[] {
+  if (!href || path !== '/') return [];
+  return [
+    { tag: 'link' as const, attrs: { rel: 'preload', href, as: 'fetch', type: 'application/wasm', crossorigin: '' } },
+  ];
 }
 
 /**

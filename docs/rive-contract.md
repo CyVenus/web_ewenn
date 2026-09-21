@@ -31,13 +31,16 @@ artboards reflow correctly at every viewport shape in the screenshot matrix.
 Switching artboard remounts the runtime (`useRive` reads its parameters only at mount), so the
 resize that triggers it is debounced by 150 ms in `src/hooks/useViewportArtboard.ts`.
 
-## What the site writes — and it is only these three
+## What the site writes — and it is only these six
 
 | Property | Type | Contract |
 |---|---|---|
 | `time` | number | `0` night, `1` day, `2` noon, `3` evening. Entry transitions are 0 ms, so a value written in `onRiveReady` lands on frame 1. Later changes blend over 500 ms. |
 | `lampOn` | trigger | Fire when the phase becomes evening or night, and once shortly after load if it starts in one. Idempotent. |
 | `lampOff` | trigger | Fire when the phase becomes day or noon. Idempotent. |
+| `scroll` | number | Reader progress along the world, in stops: `0` on the hero, `1` at the first stop, fractional in between. Written at most once a frame; rounded to whole stops under reduced motion. On `home` it drives `world` (`0 - {Input} * 1920`), `world-far` (`0 - {Input} * 960`) and counter-moves the walker; on `home-mobile` the same with a 1400-unit stop. `board-stats` also reads it: its reveal plays above `0.9` and resets below `0.4`. |
+| `walkPose` | number | `0` facing the viewer, `1` standing sideways, `2` walking. Drives `penguin-walker`'s state machine; the turn between front and side (15 frames) plays inside the file. Written by `src/lib/walker.ts`. |
+| `walkFacing` | number | `0` right (down the page), `1` left (back up it). Mirrors the walker through `facingToScaleX` (`1 - {Input} * 2`, a raw scale, not a percentage). |
 
 Written imperatively: `rive.viewModelInstance.number('time').value = n` and
 `rive.viewModelInstance.trigger('lampOn').trigger()`. No `useStateMachineInput`, no Rive Events.

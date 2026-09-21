@@ -102,6 +102,9 @@ for (const pageDef of PAGES) {
       vh,
       overflowX: doc.scrollWidth - doc.clientWidth,
       overflowY: doc.scrollHeight - doc.clientHeight,
+      // The home page is a stack of full-height screens, one per stop, so it is MEANT to scroll
+      // (screens - 1) viewports. The budget below is measured from there, not from zero.
+      screens: document.querySelectorAll('[data-screen]').length,
       titleLines: titleEl
         ? Math.round(titleEl.getBoundingClientRect().height / parseFloat(getComputedStyle(titleEl).lineHeight))
         : 0,
@@ -131,12 +134,19 @@ for (const pageDef of PAGES) {
   if (result.headerOverHero) fail.push('header overlaps hero');
   if (result.heroOverFooter) fail.push('hero overlaps footer');
   if (result.offscreen.includes('hero-sideways')) fail.push('hero leaves the viewport sideways');
-  // A legal document is meant to scroll, so only the single-screen home page has a vertical
-  // budget — and only down to WCAG 1.4.10's own target of 320x256. Below that the header, hero
-  // and footer cannot physically fit whatever we do, and scrolling is the correct answer rather
-  // than a defect.
-  if (pageDef.name === 'home' && result.vh >= 256 && result.overflowY > result.vh * 0.5) {
-    fail.push(`scrolls ${result.overflowY}px (> half a screen)`);
+  // A legal document is meant to scroll, so only the home page has a vertical budget — and only
+  // down to WCAG 1.4.10's own target of 320x256. Below that the header, hero and footer cannot
+  // physically fit whatever we do, and scrolling is the correct answer rather than a defect.
+  //
+  // Home is one full-height screen per stop, so its designed scroll is (screens - 1) viewports.
+  // This budget used to be measured from zero, from when home was a single screen; after the
+  // scroll world landed it failed every shape by exactly the screens it was built to have, and
+  // a real overflow would have hidden in that noise. What is judged now is the EXCESS: a screen
+  // that grew past its own height pushes everything below it down, and that is what shows here.
+  const designedScroll = Math.max(0, (result.screens ?? 1) - 1) * result.vh;
+  const excessScroll = result.overflowY - designedScroll;
+  if (pageDef.name === 'home' && result.vh >= 256 && excessScroll > result.vh * 0.5) {
+    fail.push(`scrolls ${excessScroll}px past its ${result.screens} screens (> half a screen)`);
   }
 
   rows.push({ page: pageDef.name, shape: shape.name, ...result, fail });

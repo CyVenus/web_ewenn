@@ -9,7 +9,7 @@ import { buildHeadTags } from './src/lib/headTags.ts';
 import { PHASE_SCHEDULE } from './src/lib/phase.ts';
 import { buildPrePaintScript } from './src/lib/prepaint.ts';
 import { DOC_ROUTES, canonicalPath, docAliases } from './src/lib/routes.ts';
-import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules } from './src/lib/warmup.ts';
+import { buildFontPreloads, buildSpeculationRules, buildWasmPreload, fontPreloadWeights } from './src/lib/warmup.ts';
 
 const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -22,8 +22,8 @@ const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url))
  * Vite serves straight out of node_modules. A weight that cannot be found is simply left out —
  * a missing preload costs a reflow, a wrong one costs a duplicate download.
  */
-function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle']): string[] {
-  return FONT_WEIGHTS.flatMap((weight) => {
+function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle'], path: string): string[] {
+  return fontPreloadWeights(path).flatMap((weight) => {
     const stem = `fredoka-latin-${weight}-normal`;
     if (!bundle) return [`/node_modules/@fontsource/fredoka/files/${stem}.woff2`];
     const name = Object.keys(bundle).find(
@@ -31,6 +31,17 @@ function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle']): string[]
     );
     return name ? [`/${name}`] : [];
   });
+}
+
+/**
+ * The Rive runtime's hashed Wasm URL, as the built page will request it. Only the primary build
+ * — not `rive_fallback`, which is fetched only when the first fails. Null in dev, where Vite
+ * serves it unhashed out of node_modules and there is no download worth racing.
+ */
+function wasmPreloadHref(bundle: IndexHtmlTransformContext['bundle']): string | null {
+  if (!bundle) return null;
+  const name = Object.keys(bundle).find((key) => /(^|\/)rive-[^/]*\.wasm$/.test(key));
+  return name ? `/${name}` : null;
 }
 
 /**
@@ -53,7 +64,7 @@ function ewennHead(): Plugin {
            * worth more than a head start on the next one, and the order tags appear in the head
            * is the order the browser discovers them in.
            */
-          ...buildFontPreloads(fontPreloadHrefs(ctx.bundle)).map((headTag) => ({
+          ...buildFontPreloads(fontPreloadHrefs(ctx.bundle, path)).map((headTag) => ({
             tag: headTag.tag,
             attrs: headTag.attrs,
             injectTo: 'head' as const,
@@ -75,6 +86,27 @@ function ewennHead(): Plugin {
           })),
         ];
       },
+    },
+  };
+}
+
+/**
+ * The Wasm preload needs its own hook, ordered `post`: the home page's `pre` transform runs
+ * before the bundle exists, so the hashed name is not there to read yet — measured, the `pre`
+ * context for index.html has no bundle at all. `post` runs once the asset has been emitted.
+ */
+function ewennWasmPreload(): Plugin {
+  return {
+    name: 'ewenn-wasm-preload',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (_html, ctx) =>
+        buildWasmPreload(wasmPreloadHref(ctx.bundle), canonicalPath(ctx.path)).map((headTag) => ({
+          tag: headTag.tag,
+          attrs: headTag.attrs,
+          injectTo: 'head' as const,
+        })),
     },
   };
 }
@@ -102,7 +134,7 @@ function ewennDocAliases(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), ewennHead(), ewennDocAliases()],
+  plugins: [react(), ewennHead(), ewennWasmPreload(), ewennDocAliases()],
   build: {
     rollupOptions: {
       input: {
