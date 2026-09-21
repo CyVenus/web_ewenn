@@ -15,13 +15,28 @@
 export const MAX_PIXEL_RATIO = 1.5;
 
 /**
+ * The cap above is about big canvases, and a phone's is small: 412x915 CSS pixels is a third of
+ * a megapixel. Held to 1.5 on a 3x screen, the board's and the banner's 8px labels are drawn at
+ * half the display's resolution and read as smudges. So a small canvas may go past the cap for
+ * as long as its drawing surface stays inside this many device pixels — about what a 1440x900
+ * desktop window already draws at 1.5 — and a large one is held at the cap as before.
+ */
+export const PIXEL_BUDGET = 2_000_000;
+/** Past this, the extra density is invisible even on the densest phone screens. */
+export const MAX_DENSE_RATIO = 3;
+
+/**
  * Never below 1 — a ratio under 1 would render the scene smaller than its own canvas and then
  * stretch it back up, which is blurrier than anything the cap is trying to buy. Browsers do
  * report fractional ratios below 1 when the page is zoomed out.
+ *
+ * `cssPixels` is the canvas's CSS width times height; left out, only the flat cap applies.
  */
-export function renderPixelRatio(devicePixelRatio: number): number {
+export function renderPixelRatio(devicePixelRatio: number, cssPixels = Number.POSITIVE_INFINITY): number {
   if (!Number.isFinite(devicePixelRatio) || devicePixelRatio < 1) return 1;
-  return Math.min(devicePixelRatio, MAX_PIXEL_RATIO);
+  const withinBudget = cssPixels > 0 ? Math.sqrt(PIXEL_BUDGET / cssPixels) : MAX_PIXEL_RATIO;
+  const ceiling = Math.max(MAX_PIXEL_RATIO, Math.min(MAX_DENSE_RATIO, withinBudget));
+  return Math.min(devicePixelRatio, ceiling);
 }
 
 /*
@@ -43,7 +58,11 @@ export function renderPixelRatio(devicePixelRatio: number): number {
  * its first real miss, 30fps.
  */
 export const SLOW_FRAME_MS = 25;
-/** One step down per verdict: 1.5 → 1.25 → 1. Enough to land on a smooth rate in two steps. */
+/**
+ * The smallest step down per verdict: 1.5 → 1.25 → 1. From higher up — a phone starting near
+ * 2.5 — each step takes half the distance to the floor instead, so two verdicts still reach a
+ * smooth rate: 2.5 → 1.75 → 1.375.
+ */
 export const RATIO_STEP = 0.25;
 /** Never below the canvas's own size — see renderPixelRatio. */
 export const MIN_PIXEL_RATIO = 1;
@@ -53,7 +72,8 @@ export const MAX_ADAPT_STEPS = 2;
 /** The ratio to draw at next, given the one in use and how its frames measured. Only ever lowers. */
 export function nextPixelRatio(current: number, medianFrameMs: number): number {
   if (!(medianFrameMs > SLOW_FRAME_MS) || current <= MIN_PIXEL_RATIO) return current;
-  return Math.max(MIN_PIXEL_RATIO, current - RATIO_STEP);
+  const step = Math.max(RATIO_STEP, (current - MIN_PIXEL_RATIO) / 2);
+  return Math.max(MIN_PIXEL_RATIO, current - step);
 }
 
 /** The median of a run of frame intervals, ignoring the first few that include startup work. */

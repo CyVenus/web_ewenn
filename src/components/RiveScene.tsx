@@ -49,6 +49,12 @@ function writeTime(rive: Rive, phase: Phase): boolean {
   return true;
 }
 
+/** The ratio to draw this canvas at: its size-aware cap, or lower once frame timing has stepped down. */
+function drawRatio(canvas: HTMLCanvasElement, adapted: number): number {
+  const cssPixels = canvas.clientWidth * canvas.clientHeight;
+  return Math.min(renderPixelRatio(window.devicePixelRatio, cssPixels), adapted);
+}
+
 function fireLamp(rive: Rive, trigger: 'lampOn' | 'lampOff') {
   rive.viewModelInstance?.trigger(trigger)?.trigger();
 }
@@ -123,8 +129,9 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     onLoadError: () => onLoadErrorRef.current(),
   });
 
-  // The scene is redrawn in full every frame, so the drawing surface is capped at
-  // MAX_PIXEL_RATIO (lib/renderScale.ts) rather than left at the display's own ratio.
+  // The scene is redrawn in full every frame, so the drawing surface is capped (lib/renderScale.ts)
+  // rather than left at the display's own ratio: at MAX_PIXEL_RATIO for a large canvas, higher for
+  // a small one such as a phone's, where the cap would blur the scene's small text.
   //
   // useRive owns the canvas: it sizes the surface at the full ratio once the layout gives the
   // element a box, and again on every container resize, from a ResizeObserver throttled through
@@ -136,9 +143,7 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     if (!rive || !canvas) return;
     const apply = () => {
       if (!canvas.clientWidth || !canvas.clientHeight) return;
-      rive.resizeDrawingSurfaceToCanvas(
-        Math.min(renderPixelRatio(window.devicePixelRatio), adaptedRatioRef.current),
-      );
+      rive.resizeDrawingSurfaceToCanvas(drawRatio(canvas, adaptedRatioRef.current));
     };
     applyRatioRef.current = apply;
     let frame = 0;
@@ -186,7 +191,9 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
           frame = requestAnimationFrame(tick);
           return;
         }
-        const current = Math.min(renderPixelRatio(window.devicePixelRatio), adaptedRatioRef.current);
+        const current = canvas
+          ? drawRatio(canvas, adaptedRatioRef.current)
+          : Math.min(renderPixelRatio(window.devicePixelRatio), adaptedRatioRef.current);
         const next = nextPixelRatio(current, medianFrameMs(intervals));
         // Smooth: nothing to give back, and no reason to keep watching.
         if (next === current) return;
@@ -212,7 +219,7 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
     };
-  }, [rive, ready, paused]);
+  }, [rive, canvas, ready, paused]);
 
   // Declared before the phase effect: when `ready` flips on a paused start, this pause must come first,
   // so a phase change made during startup still gets its play → PHASE_BLEND_MS → pause blend below.
