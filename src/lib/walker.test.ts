@@ -1,5 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { INITIAL_WALKER, TURN_MS, WALK_SPEED, isSettled, stepWalker, type WalkerState } from './walker';
+import {
+  INITIAL_WALKER,
+  MAX_PACE,
+  TURN_MS,
+  WALK_SPEED,
+  isSettled,
+  stepWalker,
+  walkPace,
+  type WalkerState,
+} from './walker';
+
+/** Frame-steps a whole journey at 60fps and reports how long it took, in seconds. */
+function journey(from: number, to: number): number {
+  let state = at({ shown: from, pose: 2, turnUntil: 0 });
+  let t = 0;
+  while (Math.abs(to - state.shown) > 0.0015 && t < 30) {
+    state = stepWalker(state, to, 10_000 + t * 1000, 1 / 60);
+    t += 1 / 60;
+  }
+  return t;
+}
+
+describe('walkPace', () => {
+  it('is a plain walk once the gap is short', () => {
+    expect(walkPace(0.3)).toBe(WALK_SPEED);
+    expect(walkPace(-0.3)).toBe(WALK_SPEED);
+  });
+
+  it('speeds up with the distance, up to the cap', () => {
+    expect(walkPace(1)).toBeGreaterThan(WALK_SPEED);
+    expect(walkPace(2)).toBe(MAX_PACE);
+    expect(walkPace(9)).toBe(MAX_PACE);
+  });
+});
+
+describe('journey times', () => {
+  it('leaves a single stop close to the walk it always was', () => {
+    expect(journey(0, 1)).toBeGreaterThan(1.9);
+    expect(journey(0, 1)).toBeLessThan(2.25);
+  });
+
+  it('brings the long trip home well under the flat-pace 4.4s', () => {
+    expect(journey(2, 0)).toBeLessThan(3.5);
+  });
+});
 
 const at = (overrides: Partial<WalkerState>): WalkerState => ({ ...INITIAL_WALKER, ...overrides });
 
@@ -11,10 +55,16 @@ describe('stepWalker', () => {
     expect(stillTurning.shown).toBe(0);
   });
 
-  it('walks toward the target at walking pace, never faster', () => {
+  it('walks the last stretch at walking pace', () => {
+    const walking = at({ pose: 2, turnUntil: 0 });
+    const next = stepWalker(walking, 0.5, 2000, 0.1);
+    expect(next.shown).toBeCloseTo(WALK_SPEED * 0.1);
+  });
+
+  it('hurries when it is far behind, but never past MAX_PACE', () => {
     const walking = at({ pose: 2, turnUntil: 0 });
     const next = stepWalker(walking, 5, 2000, 0.1);
-    expect(next.shown).toBeCloseTo(WALK_SPEED * 0.1);
+    expect(next.shown).toBeCloseTo(MAX_PACE * 0.1);
   });
 
   it('does not overshoot the target', () => {

@@ -138,6 +138,12 @@ Caching: hashed `dist/assets/` (including the WASM) `public, max-age=31536000, i
 `/rive/ewenn-scene.riv` and all HTML `no-cache`. Serve `.wasm` as `application/wasm`, and if you
 add a CSP it must allow `'wasm-unsafe-eval'`.
 
+**Compress the `.wasm`.** It is the single largest download on the site — 2.1MB raw, about 0.9MB
+gzipped and less with Brotli — and hosts that compress by MIME type often leave
+`application/wasm` off the list. Check it is served with a `Content-Encoding`; `vite preview`, for
+one, does not compress it. The `.riv` has no registered type at all, so check it is compressed too
+(1.9MB raw, about 1.1MB gzipped).
+
 ## Manual QA
 
 The automated matrix cannot see the scene's interactions — they are sub-second transients inside

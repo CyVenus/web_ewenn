@@ -8,7 +8,7 @@ import type { SceneArtboard } from '../lib/artboard';
 import { afterFrames } from '../lib/frames';
 import { greet, isAtGreetStop } from '../lib/greeting';
 import { PHASE_TIME_VALUE, isLampOnPhase, type Phase } from '../lib/phase';
-import { renderPixelRatio } from '../lib/renderScale';
+import { MAX_ADAPT_STEPS, medianFrameMs, nextPixelRatio, renderPixelRatio } from '../lib/renderScale';
 import { INITIAL_WALKER, isSettled, stepWalker, type WalkerState } from '../lib/walker';
 
 // Self-host the runtime (the default would fetch it from unpkg) and start compiling it before mount.
@@ -21,6 +21,11 @@ RuntimeLoader.awaitInstance().catch(() => undefined);
  * (about 0.35 s after load in Chrome), while the scene is otherwise paused.
  */
 export const PHASE_BLEND_MS = 700;
+
+/** Adaptive resolution timing: wait out the load, then measure this many frames per verdict. */
+const ADAPT_START_MS = 2500;
+const ADAPT_SETTLE_MS = 700;
+const ADAPT_FRAMES = 90;
 
 // Stable instance: a new Layout on every render would be re-applied to the runtime each time.
 const SCENE_LAYOUT = new Layout({ fit: Fit.Layout });
@@ -57,6 +62,10 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
   const appliedPhaseRef = useRef<Phase | null>(null);
   const cancelStartupRef = useRef<() => void>(() => undefined);
   const warnedUnboundRef = useRef(false);
+  /** The resolution the frame-time check has settled on; Infinity until it steps down. */
+  const adaptedRatioRef = useRef(Number.POSITIVE_INFINITY);
+  /** Re-applies the current drawing-surface ratio; set by the canvas effect below. */
+  const applyRatioRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -127,8 +136,11 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     if (!rive || !canvas) return;
     const apply = () => {
       if (!canvas.clientWidth || !canvas.clientHeight) return;
-      rive.resizeDrawingSurfaceToCanvas(renderPixelRatio(window.devicePixelRatio));
+      rive.resizeDrawingSurfaceToCanvas(
+        Math.min(renderPixelRatio(window.devicePixelRatio), adaptedRatioRef.current),
+      );
     };
+    applyRatioRef.current = apply;
     let frame = 0;
     const reapply = () => {
       apply();
@@ -143,8 +155,64 @@ export function RiveScene({ artboard, phase, paused, onLoadError, readProgress, 
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      applyRatioRef.current = () => undefined;
     };
   }, [rive, canvas]);
+
+  // Adaptive resolution (lib/renderScale.ts): once the scene has settled, time a couple of
+  // seconds of real frames and step the drawing surface down while they stay slower than 40fps.
+  // Only ever downwards, and at most MAX_ADAPT_STEPS times, so it cannot oscillate. A paused
+  // scene costs nothing and is left alone; a hidden tab reports no frames and is skipped.
+  useEffect(() => {
+    if (!rive || !ready || paused) return;
+    let cancelled = false;
+    let frame = 0;
+    let timer = 0;
+    let steps = 0;
+    let strikes = 0;
+    const sample = () => {
+      if (cancelled) return;
+      if (document.visibilityState !== 'visible') {
+        timer = window.setTimeout(sample, ADAPT_SETTLE_MS);
+        return;
+      }
+      const intervals: number[] = [];
+      let last = performance.now();
+      const tick = (now: number) => {
+        if (cancelled) return;
+        intervals.push(now - last);
+        last = now;
+        if (intervals.length < ADAPT_FRAMES) {
+          frame = requestAnimationFrame(tick);
+          return;
+        }
+        const current = Math.min(renderPixelRatio(window.devicePixelRatio), adaptedRatioRef.current);
+        const next = nextPixelRatio(current, medianFrameMs(intervals));
+        // Smooth: nothing to give back, and no reason to keep watching.
+        if (next === current) return;
+        // Slow once could be the machine, not the scene — another tab, a background sync, a
+        // notification animating. A step is permanent for the visit, so it waits for a second
+        // slow verdict in a row before it takes one.
+        strikes += 1;
+        if (strikes < 2) {
+          timer = window.setTimeout(sample, ADAPT_SETTLE_MS);
+          return;
+        }
+        strikes = 0;
+        adaptedRatioRef.current = next;
+        applyRatioRef.current();
+        steps += 1;
+        if (steps < MAX_ADAPT_STEPS) timer = window.setTimeout(sample, ADAPT_SETTLE_MS);
+      };
+      frame = requestAnimationFrame(tick);
+    };
+    timer = window.setTimeout(sample, ADAPT_START_MS);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [rive, ready, paused]);
 
   // Declared before the phase effect: when `ready` flips on a paused start, this pause must come first,
   // so a phase change made during startup still gets its play → PHASE_BLEND_MS → pause blend below.

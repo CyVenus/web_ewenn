@@ -9,7 +9,7 @@ import { buildHeadTags } from './src/lib/headTags.ts';
 import { PHASE_SCHEDULE } from './src/lib/phase.ts';
 import { buildPrePaintScript } from './src/lib/prepaint.ts';
 import { DOC_ROUTES, canonicalPath, docAliases } from './src/lib/routes.ts';
-import { buildFontPreloads, buildSpeculationRules, fontPreloadWeights } from './src/lib/warmup.ts';
+import { buildFontPreloads, buildSpeculationRules, buildWasmPreload, fontPreloadWeights } from './src/lib/warmup.ts';
 
 const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
@@ -31,6 +31,17 @@ function fontPreloadHrefs(bundle: IndexHtmlTransformContext['bundle'], path: str
     );
     return name ? [`/${name}`] : [];
   });
+}
+
+/**
+ * The Rive runtime's hashed Wasm URL, as the built page will request it. Only the primary build
+ * — not `rive_fallback`, which is fetched only when the first fails. Null in dev, where Vite
+ * serves it unhashed out of node_modules and there is no download worth racing.
+ */
+function wasmPreloadHref(bundle: IndexHtmlTransformContext['bundle']): string | null {
+  if (!bundle) return null;
+  const name = Object.keys(bundle).find((key) => /(^|\/)rive-[^/]*\.wasm$/.test(key));
+  return name ? `/${name}` : null;
 }
 
 /**
@@ -80,6 +91,27 @@ function ewennHead(): Plugin {
 }
 
 /**
+ * The Wasm preload needs its own hook, ordered `post`: the home page's `pre` transform runs
+ * before the bundle exists, so the hashed name is not there to read yet — measured, the `pre`
+ * context for index.html has no bundle at all. `post` runs once the asset has been emitted.
+ */
+function ewennWasmPreload(): Plugin {
+  return {
+    name: 'ewenn-wasm-preload',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (_html, ctx) =>
+        buildWasmPreload(wasmPreloadHref(ctx.bundle), canonicalPath(ctx.path)).map((headTag) => ({
+          tag: headTag.tag,
+          attrs: headTag.attrs,
+          injectTo: 'head' as const,
+        })),
+    },
+  };
+}
+
+/**
  * Copies each built document to the `.html` URL the published site already serves it at, so the
  * links baked into App Store Connect, the Rewenn products and the app binary keep resolving.
  * Asset URLs in the output are absolute, so a byte copy is a correct page.
@@ -102,7 +134,7 @@ function ewennDocAliases(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), ewennHead(), ewennDocAliases()],
+  plugins: [react(), ewennHead(), ewennWasmPreload(), ewennDocAliases()],
   build: {
     rollupOptions: {
       input: {

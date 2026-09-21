@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DOC_ROUTES } from './routes';
-import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules, fontPreloadWeights } from './warmup';
+import { FONT_WEIGHTS, buildFontPreloads, buildSpeculationRules, buildWasmPreload, fontPreloadWeights } from './warmup';
 
 describe('buildFontPreloads', () => {
   it('asks for each file as a CORS font, so the stylesheet reuses the entry', () => {
@@ -78,6 +78,25 @@ describe('buildSpeculationRules', () => {
     for (const path of ['/', ...docPaths]) {
       expect(() => JSON.parse(buildSpeculationRules(path))).not.toThrow();
     }
+  });
+});
+
+describe('buildWasmPreload', () => {
+  it('preloads the runtime on the home page as a CORS fetch', () => {
+    expect(buildWasmPreload('/assets/rive-abc.wasm', '/')).toEqual([
+      {
+        tag: 'link',
+        attrs: { rel: 'preload', href: '/assets/rive-abc.wasm', as: 'fetch', type: 'application/wasm', crossorigin: '' },
+      },
+    ]);
+  });
+
+  it('never preloads it on a document, which does not start the runtime', () => {
+    expect(buildWasmPreload('/assets/rive-abc.wasm', '/privacy/')).toEqual([]);
+  });
+
+  it('emits nothing when the build has no Wasm to name', () => {
+    expect(buildWasmPreload(null, '/')).toEqual([]);
   });
 });
 

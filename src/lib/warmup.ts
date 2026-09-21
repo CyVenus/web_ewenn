@@ -41,6 +41,26 @@ export function buildFontPreloads(hrefs: readonly string[]): HeadTag[] {
 }
 
 /**
+ * The Rive runtime's Wasm, preloaded on the home page only.
+ *
+ * It is the largest thing the page downloads — 2.1MB, about 0.9MB compressed — and without this
+ * it is discovered last: the runtime asks for it only once the page script has downloaded and
+ * run, so the two arrive one after the other. Announced in the head, they download side by side.
+ * The scene file is already preloaded in index.html for the same reason; the Wasm could not be,
+ * because its name carries a content hash that only the build knows.
+ *
+ * `as: fetch` with `crossorigin`, because the runtime fetches it in CORS mode with same-origin
+ * credentials; any other pairing warms an entry the runtime cannot reuse, and the file downloads
+ * twice. The documents never start the runtime, so they are not given it.
+ */
+export function buildWasmPreload(href: string | null, path: string): HeadTag[] {
+  if (!href || path !== '/') return [];
+  return [
+    { tag: 'link' as const, attrs: { rel: 'preload', href, as: 'fetch', type: 'application/wasm', crossorigin: '' } },
+  ];
+}
+
+/**
  * Speculation rules for the in-site links this page actually carries.
  *
  * The footer is on every page, so from anywhere the reachable set is the home page and the three
