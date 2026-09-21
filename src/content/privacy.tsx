@@ -1,10 +1,12 @@
 import type { Doc } from './doc';
 
 /**
- * Transcribed verbatim from https://ewenn.app/privacy.html (last updated 30 August 2026).
+ * Transcribed verbatim from https://ewenn.app/privacy.html (last updated 30 August 2026), and
+ * revised on 21 September 2026 for the app's avatars (the app repo's `_specs/profile-avatars.md`).
  *
- * Every claim here is a description of the app's code rather than boilerplate -- the
- * photograph stays on the device because the project has no Cloud Storage; the Gemini
+ * Every claim here is a description of the app's code rather than boilerplate -- no photo
+ * leaves the device because the project has no Cloud Storage, and the only picture another
+ * user sees is a preset or a Google photo the server resolves (`functions/src/avatar.ts`); the Gemini
  * disclosure is conditional because the app picks the on-device model when there is one;
  * "no analytics" is the vendor floor the app holds itself to. If any of those change,
  * this file and the date at the top change in the same commit.
@@ -16,7 +18,7 @@ import type { Doc } from './doc';
 export const PRIVACY_DOC: Doc = {
   title: 'Privacy Policy',
   description: 'How Ewenn handles your data.',
-  updated: 'Last updated 30 August 2026',
+  updated: 'Last updated 21 September 2026',
   path: '/privacy/',
   body: (
     <>
@@ -55,6 +57,10 @@ export const PRIVACY_DOC: Doc = {
         </li>
         <li>
           The <strong>name you give your penguin</strong>, and the date you joined.
+        </li>
+        <li>
+          Your <strong>avatar</strong> — one of Ewenn's own pictures or, if you sign in with Google,
+          your Google profile photo.
         </li>
       </ul>
 
@@ -95,18 +101,18 @@ export const PRIVACY_DOC: Doc = {
 
       <div className="doc__note">
         <p>
-          <strong>Your profile photograph is not uploaded anywhere.</strong> It is stored only on
-          your iPhone. Ewenn has no photo storage on its servers at all, so your picture is never
-          transmitted, never backed up by us, and never visible to another user. If you delete the
-          app, it is gone.
+          <strong>Ewenn never uploads a photo from your iPhone.</strong> It has no photo storage on
+          its servers at all. Your avatar is either one of Ewenn's own pictures or — only if you
+          sign in with Google — the profile photo your Google account already has, which Ewenn links
+          to rather than copies. You can switch to one of Ewenn's pictures, or to none, at any time.
         </p>
       </div>
 
       <h2>What other people can see</h2>
       <p>
-        When another user looks at your profile, they see your <strong>username</strong> and{' '}
-        <strong>display name</strong>, and nothing else. Your email address, birthday, gender, goals,
-        coin balance and account identifier are never shown to another user.
+        When another user looks at your profile, they see your <strong>username</strong>,{' '}
+        <strong>display name</strong> and <strong>avatar</strong>. Your email address, birthday,
+        gender, goals, coin balance and account identifier are never shown to another user.
       </p>
       <p>
         People in a challenge with you can see your progress in that challenge. Public links to a

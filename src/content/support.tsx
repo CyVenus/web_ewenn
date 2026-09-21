@@ -6,17 +6,17 @@ import type { Doc } from './doc';
  *
  * Every factual claim below is taken from the Privacy Policy or the Terms of Use rather
  * than written afresh, so the three documents cannot drift apart: the subscription
- * mechanics, the lapse behaviour, the coin rules, the on-device AI, the photograph never
+ * mechanics, the lapse behaviour, the coin rules, the on-device AI, no photo ever
  * leaving the phone, and the 30-day window for data requests all say here exactly what
  * they say there. The precedence line under "About this page" is what makes that safe --
  * this page explains, the other two govern.
  *
- * `updated` is this page's own date, not the 30 August 2026 the other two carry.
+ * `updated` is this page's own date, not the dates the other two carry.
  */
 export const SUPPORT_DOC: Doc = {
   title: 'Support',
   description: 'Help with your Ewenn account, subscription and data.',
-  updated: 'Last updated 16 September 2026',
+  updated: 'Last updated 21 September 2026',
   path: '/support/',
   body: (
     <>
@@ -77,8 +77,7 @@ export const SUPPORT_DOC: Doc = {
         your account uses, or tell us your username, so we can be sure the request is yours.
       </p>
       <p>
-        Deleting the app from your iPhone does not delete your account — but it does remove your
-        profile photograph, which is only ever stored on the device.
+        Deleting the app from your iPhone does not delete your account.
       </p>
 
       <h2>Rewenn — the optional subscription</h2>
@@ -162,7 +161,7 @@ export const SUPPORT_DOC: Doc = {
       <h2>Your privacy and your data</h2>
       <p>
         The <a href="/privacy/">Privacy Policy</a> sets out in full what the app collects and who can
-        see it. In short: your profile photograph never leaves your iPhone, Ewenn contains no
+        see it. In short: Ewenn never uploads a photo from your iPhone, it contains no
         analytics SDK and no crash reporter, there is no advertising and no tracking across other
         apps or websites, and we do not sell or rent your data.
       </p>
