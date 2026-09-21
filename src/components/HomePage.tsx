@@ -105,22 +105,6 @@ export function HomePage() {
               }}
             >
               <Hero />
-              {/*
-               * The page hides its scrollbar, and the hero is a complete picture, so nothing else
-               * says there are two more screens below it. This is that signal — and a button
-               * rather than an arrow, so a reader who cannot scroll by gesture can still get there.
-               * Inside the pin, it fades out with the hero the moment the walk leaves home.
-               */}
-              <button
-                type="button"
-                className="scroll-hint"
-                aria-label={`Next: ${STOPS[0].title}`}
-                onClick={() => document.querySelector(`[data-screen="${STOPS[0].id}"]`)?.scrollIntoView()}
-              >
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-                  <path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
             </div>
           </div>
           {STOPS.map((stop, index) => (
