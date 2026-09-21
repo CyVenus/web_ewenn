@@ -117,7 +117,23 @@ playing without the clock. `npm run screenshots:fallback` asserts the first of t
 
 ## Deploying
 
-Whatever serves this must keep four things true, all of them inherited from the live domain:
+This repo owns Firebase Hosting for `ewenn.app` (project `ewenn-387ed`, default site). The app
+repo keeps Cloud Functions and Firestore and has no `hosting` block, so a deploy from there can
+never put the old site back. `firebase.json`'s predeploy hook rebuilds `dist/` first.
+
+```bash
+firebase hosting:channel:deploy preview --expires 7d          # a throwaway URL, rewrites included
+firebase hosting:clone ewenn-387ed:preview ewenn-387ed:live   # promote exactly what you checked
+# or, straight to live:
+firebase deploy --only hosting
+```
+
+The domain's DNS is on Cloudflare. The apex `A` record and the `hosting-site=` TXT record must
+stay **DNS-only** (grey cloud), or Firebase cannot renew its certificate. `www` is a proxied
+placeholder record that a Cloudflare redirect rule sends to the apex, path and query kept.
+
+Whatever serves this must keep four things true, all of them inherited from the live domain — and
+`firebase.json` is where each one is kept:
 
 1. **`/privacy.html` and `/terms.html` must keep resolving.** App Store Connect, both Rewenn
    subscription products and the paywall inside the binary link there. The build emits each
