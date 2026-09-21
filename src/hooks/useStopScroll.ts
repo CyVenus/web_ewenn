@@ -1,11 +1,7 @@
 import { useEffect } from 'react';
 import { nearestIndex } from '../lib/scrollProgress';
+import { IDLE_WHEEL, readWheel, wheelPixels } from '../lib/wheelGesture';
 
-/** Accumulated wheel delta that counts as the reader meaning it, rather than a brushed trackpad. */
-const WHEEL_THRESHOLD = 12;
-/** Wheel silence that ends a gesture. Trackpad momentum keeps firing well past the lift, and
- *  every event of it belongs to the gesture that started it — otherwise one flick skips stops. */
-const GESTURE_QUIET_MS = 180;
 const SWIPE_THRESHOLD = 40;
 /** How long after the last scroll event the page counts as settled. */
 const SETTLE_MS = 160;
@@ -36,9 +32,7 @@ function isTyping(target: EventTarget | null): boolean {
 export function useStopScroll(reducedMotion: boolean) {
   useEffect(() => {
     let index = nearestIndex(window.scrollY, restingPositions());
-    let gestureSpent = false;
-    let wheelDelta = 0;
-    let quietTimer = 0;
+    let wheel = IDLE_WHEEL;
     let settleTimer = 0;
     let touchStartY: number | null = null;
     const behavior: ScrollBehavior = reducedMotion ? 'auto' : 'smooth';
@@ -57,16 +51,13 @@ export function useStopScroll(reducedMotion: boolean) {
       // A pinch arrives as ctrl+wheel; the zoom lock owns those.
       if (event.ctrlKey) return;
       event.preventDefault();
-      window.clearTimeout(quietTimer);
-      quietTimer = window.setTimeout(() => {
-        gestureSpent = false;
-        wheelDelta = 0;
-      }, GESTURE_QUIET_MS);
-      if (gestureSpent) return;
-      wheelDelta += event.deltaY;
-      if (Math.abs(wheelDelta) < WHEEL_THRESHOLD) return;
-      gestureSpent = true;
-      step(wheelDelta > 0 ? 1 : -1);
+      // Where one gesture ends and the next begins — a trackpad's momentum included — is
+      // readWheel's whole job. `deltaY` is read before `deltaMode` on purpose: Firefox reports
+      // lines to a page that asks for the mode first, and pixels to one that does not.
+      const delta = event.deltaY;
+      const read = readWheel(wheel, wheelPixels(delta, event.deltaMode, window.innerHeight), event.timeStamp);
+      wheel = read.state;
+      if (read.step) step(read.step);
     };
 
     const onTouchStart = (event: TouchEvent) => {
@@ -117,7 +108,6 @@ export function useStopScroll(reducedMotion: boolean) {
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('scroll', onScroll);
-      window.clearTimeout(quietTimer);
       window.clearTimeout(settleTimer);
     };
   }, [reducedMotion]);
